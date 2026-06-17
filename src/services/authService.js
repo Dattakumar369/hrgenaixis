@@ -1,0 +1,128 @@
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  createUserWithEmailAndPassword,
+} from 'firebase/auth';
+import { auth, HR_EMAIL } from '../firebase';
+import {
+  ensureEmployeeLinked,
+  getPendingInviteByEmail,
+  STATUS,
+} from './employeeService';
+
+function mapAuthError(error) {
+  const code = error?.code || '';
+
+  switch (code) {
+    case 'auth/configuration-not-found':
+      return 'Firebase Authentication is not set up yet. Open Firebase Console → Authentication → Get started → enable Email/Password.';
+    case 'auth/operation-not-allowed':
+      return 'Email/Password sign-in is disabled. Enable it in Firebase Console → Authentication → Sign-in method.';
+    case 'auth/email-already-in-use':
+      return 'This email is already registered. Try logging in with the same password HR shared with you.';
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+      return 'Invalid email or password. Use the credentials HR shared when you were invited.';
+    case 'auth/invalid-email':
+      return 'Invalid email address.';
+    case 'auth/weak-password':
+      return 'Password is too weak. Use at least 6 characters.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please wait a few minutes and try again.';
+    case 'auth/network-request-failed':
+      return 'Network error. Check your internet connection.';
+    default:
+      return error?.message || 'Login failed. Check Firebase Authentication setup.';
+  }
+}
+
+async function signInOrCreateHR(email, password) {
+  try {
+    return await signInWithEmailAndPassword(auth, email, password);
+  } catch (error) {
+    const canAutoCreate =
+      (error.code === 'auth/invalid-credential' ||
+        error.code === 'auth/user-not-found') &&
+      email === HR_EMAIL &&
+      password === import.meta.env.VITE_HR_PASSWORD;
+
+    if (canAutoCreate) {
+      try {
+        return await createUserWithEmailAndPassword(auth, email, password);
+      } catch (createError) {
+        throw new Error(mapAuthError(createError));
+      }
+    }
+
+    throw new Error(mapAuthError(error));
+  }
+}
+
+export async function loginHR(email, password) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!HR_EMAIL || !import.meta.env.VITE_HR_PASSWORD) {
+    throw new Error('HR credentials missing in .env. Set VITE_HR_EMAIL and VITE_HR_PASSWORD.');
+  }
+
+  if (normalizedEmail !== HR_EMAIL) {
+    throw new Error('Invalid HR email. Use the email configured in VITE_HR_EMAIL.');
+  }
+
+  if (password !== import.meta.env.VITE_HR_PASSWORD) {
+    throw new Error('Invalid HR password. Use the password configured in VITE_HR_PASSWORD.');
+  }
+
+  return signInOrCreateHR(normalizedEmail, password);
+}
+
+export async function loginEmployee(email, password) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (normalizedEmail === HR_EMAIL) {
+    throw new Error('Use HR login for HR accounts');
+  }
+
+  let credential;
+
+  try {
+    credential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+  } catch (error) {
+    const isMissingAccount =
+      error.code === 'auth/invalid-credential' ||
+      error.code === 'auth/user-not-found' ||
+      error.code === 'auth/wrong-password';
+
+    if (!isMissingAccount) {
+      throw new Error(mapAuthError(error));
+    }
+
+    const invite = await getPendingInviteByEmail(normalizedEmail);
+
+    if (!invite) {
+      throw new Error('No invite found for this email. Ask HR to invite you first.');
+    }
+
+    if (invite.status !== STATUS.INVITED && invite.status !== STATUS.REJECTED) {
+      throw new Error('Invalid email or password. Use the credentials HR shared when you were invited.');
+    }
+
+    try {
+      credential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+    } catch (createError) {
+      if (createError.code === 'auth/email-already-in-use') {
+        credential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      } else {
+        throw new Error(mapAuthError(createError));
+      }
+    }
+  }
+
+  await ensureEmployeeLinked(credential.user);
+  return credential;
+}
+
+export function logout() {
+  return signOut(auth);
+}
