@@ -20,6 +20,7 @@ const INITIAL = {
   department: '',
   jobTitle: '',
   startDate: '',
+  employeeCode: '',
 };
 
 export default function CreateEmployeeForm({ hrEmail, onCreated }) {
@@ -143,10 +144,23 @@ export default function CreateEmployeeForm({ hrEmail, onCreated }) {
           </div>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="startDate">Start date *</label>
-          <input id="startDate" name="startDate" type="date" value={form.startDate} onChange={handleChange} className={errors.startDate ? 'input-error' : ''} />
-          {errors.startDate && <span className="field-error">{errors.startDate}</span>}
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="employeeCode">Employee ID</label>
+            <input
+              id="employeeCode"
+              name="employeeCode"
+              value={form.employeeCode}
+              onChange={handleChange}
+              placeholder="GXL0003"
+            />
+            <span className="field-hint">Optional — assign now or employee enters during onboarding</span>
+          </div>
+          <div className="form-group">
+            <label htmlFor="startDate">Start date *</label>
+            <input id="startDate" name="startDate" type="date" value={form.startDate} onChange={handleChange} className={errors.startDate ? 'input-error' : ''} />
+            {errors.startDate && <span className="field-error">{errors.startDate}</span>}
+          </div>
         </div>
 
         <button type="submit" className="btn btn-primary" disabled={status === 'submitting'}>

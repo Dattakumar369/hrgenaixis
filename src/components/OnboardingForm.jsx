@@ -12,6 +12,7 @@ const INITIAL_CURRENT_COMPANY = {
 };
 
 function buildInitialForm(employee) {
+  const salary = employee.salary || {};
   return {
     firstName: employee.firstName || '',
     lastName: employee.lastName || '',
@@ -20,6 +21,10 @@ function buildInitialForm(employee) {
     department: employee.department || '',
     jobTitle: employee.jobTitle || '',
     startDate: employee.startDate || '',
+    employeeCode: salary.employeeCode || employee.employeeCode || '',
+    uan: salary.uan || employee.uan || '',
+    bankName: salary.bankName || employee.bankName || '',
+    bankAccount: salary.bankAccount || employee.bankAccount || '',
     address: employee.address || '',
     city: employee.city || '',
     state: employee.state || '',
@@ -37,6 +42,19 @@ function validate(form, documents, previousCompanies) {
   const companyErrors = {};
 
   if (!form.phone.trim()) errors.phone = 'Phone number is required';
+
+  if (!form.employeeCode.trim()) {
+    errors.employeeCode = 'Employee ID is required';
+  }
+
+  if (!form.uan.trim()) {
+    errors.uan = 'UAN is required';
+  } else if (!/^\d{12}$/.test(form.uan.replace(/\s/g, ''))) {
+    errors.uan = 'Enter a valid 12-digit UAN';
+  }
+
+  if (!form.bankName.trim()) errors.bankName = 'Bank name is required';
+  if (!form.bankAccount.trim()) errors.bankAccount = 'Account number is required';
 
   if (!form.aadharNumber.trim()) {
     errors.aadharNumber = 'Aadhar number is required';
@@ -163,6 +181,11 @@ export default function OnboardingForm({ employee, onSubmitted }) {
       ...form,
       aadharNumber: form.aadharNumber.replace(/\s/g, ''),
       panNumber: form.panNumber.trim().toUpperCase(),
+      uan: form.uan.replace(/\s/g, ''),
+      employeeCode: form.employeeCode.trim(),
+      bankName: form.bankName.trim(),
+      bankAccount: form.bankAccount.trim(),
+      existingGrossMonthly: employee.salary?.grossMonthly || 0,
     };
 
     const { errors: validationErrors, docErrors: validationDocErrors, companyErrors: validationCompanyErrors } =
@@ -259,6 +282,73 @@ export default function OnboardingForm({ employee, onSubmitted }) {
         <div className="form-group">
           <label htmlFor="startDate">Start date</label>
           <input id="startDate" name="startDate" type="date" value={form.startDate} readOnly className="input-readonly" />
+        </div>
+      </section>
+
+      <section className="form-section">
+        <h2>Payroll &amp; Bank Details</h2>
+        <p className="section-desc">Required for salary processing and payslip generation.</p>
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="employeeCode">Employee ID *</label>
+            <input
+              id="employeeCode"
+              name="employeeCode"
+              type="text"
+              value={form.employeeCode}
+              onChange={handleChange}
+              placeholder="GXL0003"
+              readOnly={!!(employee.salary?.employeeCode || employee.employeeCode)}
+              className={`${errors.employeeCode ? 'input-error' : ''} ${(employee.salary?.employeeCode || employee.employeeCode) ? 'input-readonly' : ''}`}
+            />
+            {(employee.salary?.employeeCode || employee.employeeCode) && (
+              <span className="field-hint">Assigned by HR</span>
+            )}
+            {errors.employeeCode && <span className="field-error">{errors.employeeCode}</span>}
+          </div>
+          <div className="form-group">
+            <label htmlFor="uan">UAN *</label>
+            <input
+              id="uan"
+              name="uan"
+              type="text"
+              inputMode="numeric"
+              maxLength={12}
+              value={form.uan}
+              onChange={handleChange}
+              placeholder="12-digit UAN"
+              className={errors.uan ? 'input-error' : ''}
+            />
+            {errors.uan && <span className="field-error">{errors.uan}</span>}
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="bankName">Bank name *</label>
+            <input
+              id="bankName"
+              name="bankName"
+              type="text"
+              value={form.bankName}
+              onChange={handleChange}
+              placeholder="HDFC Bank"
+              className={errors.bankName ? 'input-error' : ''}
+            />
+            {errors.bankName && <span className="field-error">{errors.bankName}</span>}
+          </div>
+          <div className="form-group">
+            <label htmlFor="bankAccount">Account number *</label>
+            <input
+              id="bankAccount"
+              name="bankAccount"
+              type="text"
+              inputMode="numeric"
+              value={form.bankAccount}
+              onChange={handleChange}
+              className={errors.bankAccount ? 'input-error' : ''}
+            />
+            {errors.bankAccount && <span className="field-error">{errors.bankAccount}</span>}
+          </div>
         </div>
       </section>
 

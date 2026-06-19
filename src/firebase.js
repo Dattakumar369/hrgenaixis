@@ -13,6 +13,20 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
+const missingKeys = [
+  ['VITE_FIREBASE_API_KEY', firebaseConfig.apiKey],
+  ['VITE_FIREBASE_AUTH_DOMAIN', firebaseConfig.authDomain],
+  ['VITE_FIREBASE_PROJECT_ID', firebaseConfig.projectId],
+  ['VITE_FIREBASE_APP_ID', firebaseConfig.appId],
+].filter(([, value]) => !value).map(([key]) => key);
+
+if (missingKeys.length > 0) {
+  throw new Error(
+    `Firebase config missing: ${missingKeys.join(', ')}. ` +
+    'Add these in Vercel → Project → Settings → Environment Variables, then redeploy.'
+  );
+}
+
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);

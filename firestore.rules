@@ -2,20 +2,71 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // IMPORTANT: Keep this in sync with VITE_HR_EMAIL in your .env file
+    function hrEmail() {
+      return 'hr@company.com';
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isHr() {
+      return isSignedIn() && request.auth.token.email == hrEmail();
+    }
+
+    function employeeDoc(employeeId) {
+      return get(/databases/$(database)/documents/employees/$(employeeId)).data;
+    }
+
+    function isEmployeeOwner(employeeId) {
+      return isSignedIn() && employeeDoc(employeeId).uid == request.auth.uid;
+    }
+
+    function isPendingInvite() {
+      return resource.data.get('uid', null) == null;
+    }
+
+    // Allow invite lookup before first login, or when email matches the signed-in user
+    function canReadInvite() {
+      return isPendingInvite() && (
+        !isSignedIn() || request.auth.token.email == resource.data.email
+      );
+    }
+
+    // Employee links Firestore invite to Firebase Auth uid on first login
+    function isLinkingInvite() {
+      return isSignedIn()
+        && isPendingInvite()
+        && resource.data.email == request.auth.token.email
+        && request.resource.data.uid == request.auth.uid;
+    }
+
     match /employees/{employeeId} {
-      // HR + logged-in employees can read all records
-      // Before first login: allow reading invites where uid is not set yet
-      allow read: if request.auth != null
-        || resource.data.get('uid', null) == null;
 
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
-      allow delete: if request.auth != null;
+      allow read: if isHr()
+        || (isSignedIn() && resource.data.uid == request.auth.uid)
+        || canReadInvite();
 
+      allow create: if isHr();
+
+      allow update: if isHr()
+        || (isSignedIn() && resource.data.uid == request.auth.uid)
+        || isLinkingInvite();
+
+      allow delete: if isHr();
+
+      // Onboarding document uploads (base64 in Firestore)
       match /documents/{docId} {
-        allow read, create: if request.auth != null;
+        allow read, create: if isHr() || isEmployeeOwner(employeeId);
         allow update: if false;
-        allow delete: if request.auth != null;
+        allow delete: if isHr();
+      }
+
+      // Payslips — HR generates; employees can read their own
+      match /payslips/{payslipId} {
+        allow read: if isHr() || isEmployeeOwner(employeeId);
+        allow create, update, delete: if isHr();
       }
     }
   }

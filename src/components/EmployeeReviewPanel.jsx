@@ -243,7 +243,11 @@ export default function EmployeeReviewPanel({ employee, hrEmail, onUpdated, onDe
         <div className="review-section">
           <h4>Basic Info</h4>
           <DetailRow label="Email" value={employee.email} />
+          <DetailRow label="Employee ID" value={employee.employeeCode || employee.salary?.employeeCode} />
           <DetailRow label="Phone" value={employee.phone} />
+          <DetailRow label="UAN" value={employee.uan || employee.salary?.uan} />
+          <DetailRow label="Bank" value={employee.bankName || employee.salary?.bankName} />
+          <DetailRow label="Account No." value={employee.bankAccount || employee.salary?.bankAccount} />
           <DetailRow label="Department" value={employee.department} />
           <DetailRow label="Job title" value={employee.jobTitle} />
           <DetailRow label="Start date" value={employee.startDate} />

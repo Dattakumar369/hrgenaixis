@@ -99,10 +99,20 @@ export async function createEmployeeRecord(data, hrEmail) {
       department: data.department,
       jobTitle: data.jobTitle.trim(),
       startDate: data.startDate,
+      employeeCode: data.employeeCode?.trim() || '',
       status: STATUS.INVITED,
       uid: null,
       createdBy: hrEmail,
       createdAt: serverTimestamp(),
+      salary: {
+        grossMonthly: 0,
+        pfRate: 0.12,
+        professionalTax: 200,
+        employeeCode: data.employeeCode?.trim() || '',
+        uan: '',
+        bankName: '',
+        bankAccount: '',
+      },
     });
 
     return docRef.id;
@@ -169,8 +179,15 @@ export async function submitOnboarding(employeeId, uid, formData, documents) {
     throw new Error('Account not linked. Log out and log in again with your HR invite credentials.');
   }
 
-  const { aadharNumber, panNumber, ...employeeData } = formData;
+  const { aadharNumber, panNumber, existingGrossMonthly, employeeCode, uan, bankName, bankAccount, ...employeeData } = formData;
   const { currentCompany, previousCompanies, ...identityDocs } = documents;
+
+  const payrollFields = {
+    employeeCode: employeeCode?.trim() || '',
+    uan: uan?.trim() || '',
+    bankName: bankName?.trim() || '',
+    bankAccount: bankAccount?.trim() || '',
+  };
 
   try {
     const [aadharFile, panFile, offerLetter, joiningLetter, appointmentLetter, educationalFiles, ...previousUploads] =
@@ -188,7 +205,12 @@ export async function submitOnboarding(employeeId, uid, formData, documents) {
 
     await updateDoc(doc(db, 'employees', employeeId), {
       ...employeeData,
+      ...payrollFields,
       uid,
+      salary: {
+        grossMonthly: Number(existingGrossMonthly) || 0,
+        ...payrollFields,
+      },
       documents: {
         aadhar: { number: aadharNumber, ...aadharFile },
         pan: { number: panNumber, ...panFile },
