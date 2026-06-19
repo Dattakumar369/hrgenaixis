@@ -23,7 +23,7 @@ If you see **"Firestore blocked this action"** when inviting an employee, the ru
 
 | Location | Value |
 |----------|--------|
-| `.env` → `VITE_HR_EMAIL` | `hr@company.com` |
+| `.env` → `VITE_HR_EMAIL` | `hr@genaixis.com` |
 | Vercel env vars → `VITE_HR_EMAIL` | same as above |
 | `firestore.rules` → `hrEmail()` | same as above |
 | Firebase Auth login email | same as above |
@@ -56,3 +56,43 @@ Project is already linked in `.firebaserc`.
 2. **Firestore Database** must exist (not only Auth)
 3. Hard refresh the app (Ctrl+Shift+R) after publishing rules
 4. Check browser console — error now shows which email you are signed in as
+
+## Live site (Vercel) — works locally but not on production
+
+### 1. Redeploy after env vars
+
+Vite bakes `VITE_*` values at **build time**. After adding variables in Vercel:
+
+1. **Deployments** → **⋯** → **Redeploy** (not just save env vars)
+2. Hard refresh the live URL (Ctrl+Shift+R)
+
+### 2. Copy every Firebase variable to Vercel
+
+All of these must match your local `.env` exactly:
+
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID` → must be `employee-data-20218`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_FIREBASE_MEASUREMENT_ID`
+- `VITE_HR_EMAIL` → `hr@genaixis.com`
+- `VITE_HR_PASSWORD`
+
+If `VITE_FIREBASE_PROJECT_ID` is wrong on Vercel, local and live use **different databases** — invites created locally won't exist on live.
+
+### 3. Add Vercel domain to Firebase Auth
+
+Firebase Console → **Authentication → Settings → Authorized domains**
+
+Add your live URL, e.g.:
+
+- `your-app.vercel.app`
+- Your custom domain if you use one
+
+### 4. Invite employees from the live site
+
+After redeploy, HR must **invite again from the live URL** (not only from localhost). Old invites created only on local still work if both use the same Firebase project — but the employee login account must exist in Firebase Auth.
+
+Check: Firebase Console → **Authentication → Users** — employee email should appear after HR invites.

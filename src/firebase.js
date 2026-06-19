@@ -45,6 +45,7 @@ if (import.meta.env.VITE_FIREBASE_MEASUREMENT_ID) {
 }
 
 export const HR_EMAIL = import.meta.env.VITE_HR_EMAIL?.toLowerCase();
+export const FIREBASE_PROJECT_ID = firebaseConfig.projectId || '';
 
 export function isHrUser(user) {
   return user?.email?.toLowerCase() === HR_EMAIL;

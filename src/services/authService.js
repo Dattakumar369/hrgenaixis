@@ -3,9 +3,10 @@ import {
   signOut,
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
-import { auth, HR_EMAIL } from '../firebase';
+import { auth, HR_EMAIL, FIREBASE_PROJECT_ID } from '../firebase';
 import {
   ensureEmployeeLinked,
+  getInviteByEmail,
   getPendingInviteByEmail,
   STATUS,
 } from './employeeService';
@@ -102,6 +103,16 @@ export async function loginEmployee(email, password) {
     try {
       invite = await getPendingInviteByEmail(normalizedEmail);
     } catch (lookupError) {
+      const blocked = lookupError?.message?.includes('Firestore blocked')
+        || lookupError?.message?.includes('permission');
+
+      if (blocked) {
+        throw new Error(
+          'Your account may already be set up. Use the exact password HR shared. ' +
+          'If login still fails, ask HR to reset your password in Firebase Console → Authentication → Users.'
+        );
+      }
+
       throw new Error(
         lookupError?.message ||
           'Could not verify your invite. Check the email matches what HR used exactly, then try again.'
@@ -109,8 +120,29 @@ export async function loginEmployee(email, password) {
     }
 
     if (!invite) {
+      try {
+        const existing = await getInviteByEmail(normalizedEmail);
+        if (existing?.uid) {
+          throw new Error('Invalid email or password. Use the credentials HR shared when you were invited.');
+        }
+      } catch (lookupError) {
+        if (lookupError.message.includes('Invalid email or password')) {
+          throw lookupError;
+        }
+
+        const blocked = lookupError?.message?.includes('Firestore blocked')
+          || lookupError?.message?.includes('permission');
+
+        if (blocked) {
+          throw new Error(
+            'Invalid email or password. Your invite is already linked — use the password HR shared.'
+          );
+        }
+      }
+
       throw new Error(
-        `No invite found for ${normalizedEmail}. Use the exact email HR invited — check spelling (e.g. @genaixis.com).`
+        `No invite found for ${normalizedEmail}. Ask HR to invite you from the live portal ` +
+        `(project: ${FIREBASE_PROJECT_ID || 'unknown'}). Use the exact email, e.g. @genaixis.com.`
       );
     }
 
