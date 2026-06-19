@@ -10,7 +10,7 @@ import {
   serverTimestamp,
   orderBy,
 } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth, HR_EMAIL } from '../firebase';
 import { uploadDocument, uploadDocuments } from './documentService';
 
 export const STATUS = {
@@ -32,12 +32,17 @@ export const EMPLOYMENT_STATUS_LABELS = {
   [EMPLOYMENT_STATUS.ABSCONDED]: 'Absconded',
 };
 
-function mapFirestoreError(error) {
+function mapFirestoreError(error, contextEmail) {
   const code = error?.code || '';
   const message = error?.message || '';
+  const signedInAs = auth.currentUser?.email || contextEmail || 'not signed in';
 
   if (code === 'permission-denied' || message.includes('permission-denied') || message.includes('insufficient permissions')) {
-    return 'Firestore blocked this action. Open Firebase Console → Firestore → Rules, paste ALL of firestore.rules from this project, click Publish, then try again.';
+    return (
+      `Firestore blocked this action (signed in as ${signedInAs}). ` +
+      `Publish firestore.rules in Firebase Console → Firestore → Rules. ` +
+      `Set hrEmail() to "${HR_EMAIL || 'hr@company.com'}" (same as VITE_HR_EMAIL), then click Publish.`
+    );
   }
   if (message.includes('not-found') || message.includes('Unavailable')) {
     return 'Firestore is not set up. Enable it in Firebase Console → Build → Firestore Database.';
@@ -82,6 +87,12 @@ export async function getPendingInviteByEmail(email) {
 export async function createEmployeeRecord(data, hrEmail) {
   if (!auth.currentUser) {
     throw new Error('HR session expired. Log out and log in again as HR.');
+  }
+
+  if (auth.currentUser.email?.toLowerCase() !== HR_EMAIL) {
+    throw new Error(
+      `You are signed in as ${auth.currentUser.email}. HR actions require ${HR_EMAIL}. Log out and sign in with the HR account.`
+    );
   }
 
   const email = data.email.trim().toLowerCase();
