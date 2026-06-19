@@ -42,18 +42,22 @@ async function signInOrCreateHR(email, password) {
   try {
     return await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
-    const canAutoCreate =
-      (error.code === 'auth/invalid-credential' ||
-        error.code === 'auth/user-not-found') &&
-      email === HR_EMAIL &&
-      password === import.meta.env.VITE_HR_PASSWORD;
-
-    if (canAutoCreate) {
+    if (error.code === 'auth/user-not-found' && email === HR_EMAIL) {
       try {
         return await createUserWithEmailAndPassword(auth, email, password);
       } catch (createError) {
         throw new Error(mapAuthError(createError));
       }
+    }
+
+    if (
+      error.code === 'auth/invalid-credential' ||
+      error.code === 'auth/wrong-password'
+    ) {
+      throw new Error(
+        'Incorrect HR password. Reset it in Firebase Console → Authentication → Users → ' +
+        `${HR_EMAIL} → reset password, then sign in with the new password.`
+      );
     }
 
     throw new Error(mapAuthError(error));
@@ -63,16 +67,12 @@ async function signInOrCreateHR(email, password) {
 export async function loginHR(email, password) {
   const normalizedEmail = email.trim().toLowerCase();
 
-  if (!HR_EMAIL || !import.meta.env.VITE_HR_PASSWORD) {
-    throw new Error('HR credentials missing in .env. Set VITE_HR_EMAIL and VITE_HR_PASSWORD.');
+  if (!HR_EMAIL) {
+    throw new Error('HR email not configured. Set VITE_HR_EMAIL in .env / Vercel, then redeploy.');
   }
 
   if (normalizedEmail !== HR_EMAIL) {
-    throw new Error('Invalid HR email. Use the email configured in VITE_HR_EMAIL.');
-  }
-
-  if (password !== import.meta.env.VITE_HR_PASSWORD) {
-    throw new Error('Invalid HR password. Use the password configured in VITE_HR_PASSWORD.');
+    throw new Error(`Invalid HR email. Use ${HR_EMAIL}.`);
   }
 
   return signInOrCreateHR(normalizedEmail, password);

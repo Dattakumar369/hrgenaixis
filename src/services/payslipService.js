@@ -93,6 +93,7 @@ export async function generatePayslip(employee, options, hrEmail) {
     email: employee.email,
     department: employee.department || '',
     jobTitle: employee.jobTitle || '',
+    startDate: employee.startDate || '',
     uan: payrollInfo.uan,
     month: Number(month),
     year: Number(year),
