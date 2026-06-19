@@ -6,6 +6,10 @@ import { formatMonthYear } from '../utils/employeeHelpers';
 const M = { left: 14, right: 14, top: 10 };
 const ADDR_RIGHT_MARGIN = 8;
 const ROW_H_MM = 6.5;
+const HEADER_LOGO_SIZE = 38;
+const LOGO_IMAGE_TOP_TRIM = 9.5;
+const WATERMARK_W = 155;
+const WATERMARK_H = 98;
 
 function ensureBreakdown(payslip, employee) {
   if (payslip.breakdown) return payslip.breakdown;
@@ -70,8 +74,8 @@ function drawTableWatermark(doc, logoDataUrl, tableTopY, tableHeightMm) {
   if (!logoDataUrl) return;
 
   const pw = doc.internal.pageSize.getWidth();
-  const logoW = 130;
-  const logoH = 78;
+  const logoW = WATERMARK_W;
+  const logoH = WATERMARK_H;
   const centerY = tableTopY + tableHeightMm / 2;
   const x = pw / 2 - logoW / 2;
   const y = centerY - logoH / 2;
@@ -86,15 +90,15 @@ function drawTableWatermark(doc, logoDataUrl, tableTopY, tableHeightMm) {
   }
 }
 
-/** Company address — right column only (kept clear of centered title) */
-function drawCompanyAddress(doc, y0) {
+/** Company address — right column */
+function drawCompanyAddress(doc, firstBaselineY) {
   const pw = doc.internal.pageSize.getWidth();
   const blockRight = pw - ADDR_RIGHT_MARGIN;
   const blockLeft = pw / 2 + 32;
   const blockW = blockRight - blockLeft;
   const cx = blockLeft + blockW / 2;
 
-  let ry = y0 + 1;
+  let ry = firstBaselineY;
   doc.setFontSize(9);
   doc.setTextColor(0, 0, 0);
 
@@ -118,14 +122,16 @@ function drawCompanyAddress(doc, y0) {
 /** Logo top-left | Title center (underlined) | Company address top-right */
 function drawTopHeader(doc, logo, monthLabel) {
   const pw = doc.internal.pageSize.getWidth();
-  const y0 = M.top;
+  const addrFirstLineY = M.top + 1;
+  const textCapOffset = 2.8;
+  const logoY = Math.max(2, addrFirstLineY - textCapOffset - LOGO_IMAGE_TOP_TRIM);
 
   if (logo) {
-    doc.addImage(logo, 'JPEG', M.left, y0, 28, 28);
+    doc.addImage(logo, 'JPEG', M.left, logoY, HEADER_LOGO_SIZE, HEADER_LOGO_SIZE);
   }
 
   const title = `Salary Slip \u2013 ${monthLabel}`;
-  const titleY = y0 + 14;
+  const titleY = addrFirstLineY + 18.5;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
   doc.setTextColor(0, 0, 0);
@@ -135,9 +141,9 @@ function drawTopHeader(doc, logo, monthLabel) {
   doc.setLineWidth(0.35);
   doc.line(pw / 2 - titleW / 2, titleY + 1.2, pw / 2 + titleW / 2, titleY + 1.2);
 
-  const ry = drawCompanyAddress(doc, y0);
+  const ry = drawCompanyAddress(doc, addrFirstLineY);
 
-  return Math.max(y0 + 28, ry);
+  return Math.max(logoY + HEADER_LOGO_SIZE + 2, ry);
 }
 
 function drawEmployeeBlock(doc, startY, rows) {
