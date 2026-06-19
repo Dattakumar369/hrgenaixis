@@ -4,7 +4,7 @@ service cloud.firestore {
 
     // IMPORTANT: Must match VITE_HR_EMAIL in .env (and Vercel env vars)
     function hrEmail() {
-      return 'hr@company.com';
+      return 'hr@genaixis.com';
     }
 
     function isSignedIn() {
@@ -28,10 +28,14 @@ service cloud.firestore {
       return resource.data.get('uid', null) == null;
     }
 
+    function emailsMatch(a, b) {
+      return a.lower() == b.lower();
+    }
+
     // Allow invite lookup before first login, or when email matches the signed-in user
     function canReadInvite() {
       return isPendingInvite() && (
-        !isSignedIn() || request.auth.token.email == resource.data.email
+        !isSignedIn() || emailsMatch(request.auth.token.email, resource.data.email)
       );
     }
 
@@ -39,7 +43,7 @@ service cloud.firestore {
     function isLinkingInvite() {
       return isSignedIn()
         && isPendingInvite()
-        && resource.data.email == request.auth.token.email
+        && emailsMatch(resource.data.email, request.auth.token.email)
         && request.resource.data.uid == request.auth.uid;
     }
 

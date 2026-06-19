@@ -12,7 +12,7 @@ If you see **"Firestore blocked this action"** when inviting an employee, the ru
 
    ```javascript
    function hrEmail() {
-     return 'hr@company.com';
+     return 'hr@genaixis.com';
    }
    ```
 

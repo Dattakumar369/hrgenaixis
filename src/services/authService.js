@@ -98,10 +98,20 @@ export async function loginEmployee(email, password) {
       throw new Error(mapAuthError(error));
     }
 
-    const invite = await getPendingInviteByEmail(normalizedEmail);
+    let invite;
+    try {
+      invite = await getPendingInviteByEmail(normalizedEmail);
+    } catch (lookupError) {
+      throw new Error(
+        lookupError?.message ||
+          'Could not verify your invite. Check the email matches what HR used exactly, then try again.'
+      );
+    }
 
     if (!invite) {
-      throw new Error('No invite found for this email. Ask HR to invite you first.');
+      throw new Error(
+        `No invite found for ${normalizedEmail}. Use the exact email HR invited — check spelling (e.g. @genaixis.com).`
+      );
     }
 
     if (invite.status !== STATUS.INVITED && invite.status !== STATUS.REJECTED) {

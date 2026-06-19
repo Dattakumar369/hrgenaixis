@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -30,6 +30,13 @@ if (missingKeys.length > 0) {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+/** Secondary auth — create employee login without signing HR out */
+const EMPLOYEE_AUTH_APP = 'EmployeeAuth';
+const employeeAuthApp = getApps().some((a) => a.name === EMPLOYEE_AUTH_APP)
+  ? getApp(EMPLOYEE_AUTH_APP)
+  : initializeApp(firebaseConfig, EMPLOYEE_AUTH_APP);
+export const employeeAuth = getAuth(employeeAuthApp);
 
 if (import.meta.env.VITE_FIREBASE_MEASUREMENT_ID) {
   isSupported().then((supported) => {

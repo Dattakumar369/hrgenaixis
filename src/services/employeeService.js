@@ -10,7 +10,8 @@ import {
   serverTimestamp,
   orderBy,
 } from 'firebase/firestore';
-import { db, auth, HR_EMAIL } from '../firebase';
+import { db, auth, employeeAuth, HR_EMAIL } from '../firebase';
+import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { uploadDocument, uploadDocuments } from './documentService';
 
 export const STATUS = {
@@ -51,6 +52,27 @@ function mapFirestoreError(error, contextEmail) {
   return message || 'Failed to save employee invite.';
 }
 
+async function provisionEmployeeAuthAccount(email, password) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  try {
+    const credential = await createUserWithEmailAndPassword(employeeAuth, normalizedEmail, password);
+    await signOut(employeeAuth);
+    return credential.user.uid;
+  } catch (error) {
+    await signOut(employeeAuth).catch(() => {});
+
+    if (error.code === 'auth/email-already-in-use') {
+      return null;
+    }
+
+    const message = error?.code === 'auth/weak-password'
+      ? 'Password is too weak. Use at least 6 characters.'
+      : error?.message || 'Failed to create employee login account.';
+    throw new Error(message);
+  }
+}
+
 export async function getInviteByEmail(email) {
   const normalizedEmail = email.trim().toLowerCase();
   const q = query(collection(db, 'employees'), where('email', '==', normalizedEmail));
@@ -65,23 +87,13 @@ export async function getInviteByEmail(email) {
   }
 }
 
-/** Lookup invite before login — query must match Firestore security rules */
+/** Lookup pending invite — email query only (works with Firestore security rules) */
 export async function getPendingInviteByEmail(email) {
-  const normalizedEmail = email.trim().toLowerCase();
-  const q = query(
-    collection(db, 'employees'),
-    where('email', '==', normalizedEmail),
-    where('uid', '==', null)
-  );
-
-  try {
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    const employeeDoc = snapshot.docs[0];
-    return { id: employeeDoc.id, ...employeeDoc.data() };
-  } catch (error) {
-    throw new Error(mapFirestoreError(error));
-  }
+  const invite = await getInviteByEmail(email);
+  if (!invite) return null;
+  if (invite.uid) return null;
+  if (invite.status !== STATUS.INVITED && invite.status !== STATUS.REJECTED) return null;
+  return invite;
 }
 
 export async function createEmployeeRecord(data, hrEmail) {
@@ -125,6 +137,12 @@ export async function createEmployeeRecord(data, hrEmail) {
         bankAccount: '',
       },
     });
+
+    if (!data.password || data.password.length < 6) {
+      throw new Error('Temporary password must be at least 6 characters.');
+    }
+
+    await provisionEmployeeAuthAccount(email, data.password);
 
     return docRef.id;
   } catch (error) {
