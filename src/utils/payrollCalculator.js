@@ -30,14 +30,48 @@ export function formatInr(amount) {
 }
 
 /**
+ * Total gross (CTC component) includes employer PF.
+ * Salary gross = total gross − employer PF, then basic/HRA/special are split from salary gross.
+ */
+export function deriveSalaryGrossFromTotal(
+  totalGross,
+  pfRate = PAYROLL_DEFAULTS.pfRate,
+  pfBasicCap = PAYROLL_DEFAULTS.pfBasicCap,
+) {
+  const total = Math.round(Number(totalGross) || 0);
+  if (total <= 0) {
+    return { totalGrossMonthly: 0, salaryGrossMonthly: 0, employerPfMonthly: 0 };
+  }
+
+  let salaryGross = total;
+  for (let i = 0; i < 6; i += 1) {
+    const basic = Math.round(salaryGross * 0.5);
+    const employerPf = Math.round(Math.min(basic, pfBasicCap) * pfRate);
+    const next = total - employerPf;
+    if (next === salaryGross) break;
+    salaryGross = next;
+  }
+
+  const basic = Math.round(salaryGross * 0.5);
+  const employerPfMonthly = Math.round(Math.min(basic, pfBasicCap) * pfRate);
+
+  return {
+    totalGrossMonthly: total,
+    salaryGrossMonthly: total - employerPfMonthly,
+    employerPfMonthly,
+  };
+}
+
+/**
  * Payroll formulas:
- * Basic = Gross × 50%
+ * Total gross → minus employer PF → salary gross
+ * Basic = salary gross × 50%
  * HRA = Basic × 50%
- * Special = Gross − Basic − HRA
- * PayableX = (X × PaidDays) / TotalDays
- * EmployeePF = MIN(PayableBasic, 15000) × 12%
- * EmployerPF = MIN(PayableBasic, 15000) × 12%
- * NetSalary = GrossPayable − EmployeePF − EmployerPF − ProfessionalTax
+ * Special = salary gross − Basic − HRA
+ * EmployeePF monthly = MIN(Basic, 15000) × 12%
+ * EmployeePF payable = monthly PF × (PaidDays / TotalDays)
+ * NetSalary = GrossPayable − EmployeePF − ProfessionalTax
+ * (Employer PF is excluded from employee payslip and net deductions.)
  */
 export function computePayslipBreakdown({
   grossMonthly,
@@ -47,16 +81,21 @@ export function computePayslipBreakdown({
   pfBasicCap = PAYROLL_DEFAULTS.pfBasicCap,
   professionalTax = PAYROLL_DEFAULTS.professionalTax,
 }) {
-  const gross = Math.round(Number(grossMonthly) || 0);
-  const paid = Number(paidDays) || 0;
-  const total = Number(totalDays) || 30;
   const rate = Number(pfRate) || 0;
   const pfCap = Number(pfBasicCap) || PAYROLL_DEFAULTS.pfBasicCap;
   const pt = Math.round(Number(professionalTax) || 0);
+  const paid = Number(paidDays) || 0;
+  const total = Number(totalDays) || 30;
 
-  const basic = Math.round(gross * 0.5);
+  const { totalGrossMonthly, salaryGrossMonthly, employerPfMonthly } = deriveSalaryGrossFromTotal(
+    grossMonthly,
+    rate,
+    pfCap,
+  );
+
+  const basic = Math.round(salaryGrossMonthly * 0.5);
   const hra = Math.round(basic * 0.5);
-  const specialAllowance = gross - basic - hra;
+  const specialAllowance = salaryGrossMonthly - basic - hra;
 
   const payableBasic = proRate(basic, paid, total);
   const payableHra = proRate(hra, paid, total);
@@ -65,11 +104,9 @@ export function computePayslipBreakdown({
   const grossPayable = payableBasic + payableHra + payableSpecial;
 
   const pfWageMonthly = Math.min(basic, pfCap);
-  const pfWagePayable = Math.min(payableBasic, pfCap);
   const employeePfMonthly = Math.round(pfWageMonthly * rate);
-  const employerPfMonthly = Math.round(pfWageMonthly * rate);
-  const employeePfPayable = Math.round(pfWagePayable * rate);
-  const employerPfPayable = Math.round(pfWagePayable * rate);
+  const employeePfPayable = proRate(employeePfMonthly, paid, total);
+  const employerPfPayable = proRate(employerPfMonthly, paid, total);
 
   const earnings = {
     basic: { label: 'Basic Salary', monthly: basic, payable: payableBasic },
@@ -86,32 +123,30 @@ export function computePayslipBreakdown({
     monthly: employeePfMonthly,
     payable: employeePfPayable,
   };
-  const employerPF = {
-    label: 'Employer PF (C)',
-    monthly: employerPfMonthly,
-    payable: employerPfPayable,
-  };
   const professionalTaxRow = {
-    label: 'Professional Tax (D)',
+    label: 'Professional Tax (C)',
     monthly: pt,
     payable: pt,
   };
 
-  const totalDeductionsMonthly = employeePfMonthly + employerPfMonthly + pt;
-  const totalDeductionsPayable = employeePfPayable + employerPfPayable + pt;
+  const totalDeductionsMonthly = employeePfMonthly + pt;
+  const totalDeductionsPayable = employeePfPayable + pt;
 
-  const netMonthly = gross - totalDeductionsMonthly;
+  const netMonthly = salaryGrossMonthly - totalDeductionsMonthly;
   const netPayable = grossPayable - totalDeductionsPayable;
 
   return {
-    grossMonthly: gross,
+    totalGrossMonthly,
+    grossMonthly: salaryGrossMonthly,
     grossPayable,
     paidDays: paid,
     totalDays: total,
     pfRate: rate,
     professionalTax: pt,
+    employerPfMonthly,
+    employerPfPayable,
     earnings,
-    deductions: { employeePF, employerPF, professionalTax: professionalTaxRow },
+    deductions: { employeePF, professionalTax: professionalTaxRow },
     totalDeductionsMonthly,
     totalDeductionsPayable,
     netMonthly,

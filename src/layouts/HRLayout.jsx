@@ -23,8 +23,8 @@ export default function HRLayout() {
     <div className="portal-shell">
       <aside className="portal-sidebar">
         <div className="sidebar-brand">
-          <BrandLogo size="sm" compact />
-          <span className="sidebar-portal-tag">HR Portal</span>
+          <BrandLogo size="sm" compact showWordmark />
+          <span className="sidebar-portal-tag">HR Console</span>
         </div>
 
         <nav className="sidebar-nav">

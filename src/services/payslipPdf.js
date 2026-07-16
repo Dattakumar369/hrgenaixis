@@ -12,7 +12,6 @@ const WATERMARK_W = 155;
 const WATERMARK_H = 98;
 
 function ensureBreakdown(payslip, employee) {
-  if (payslip.breakdown) return payslip.breakdown;
   const salary = payslip.salary || employee?.salary || {};
   const gross = salary.grossMonthly || payslip.grossPay || 0;
   return computePayslipBreakdown({
@@ -208,17 +207,16 @@ export async function downloadPayslipPdf(payslip, employee = {}) {
     ['Gross Earnings (A)', formatInr(b.grossMonthly), formatInr(b.grossPayable)],
     ['Deductions', '', ''],
     [d.employeePF.label, formatInr(d.employeePF.monthly), formatInr(d.employeePF.payable)],
-    [d.employerPF.label, formatInr(d.employerPF.monthly), formatInr(d.employerPF.payable)],
     [d.professionalTax.label, formatInr(d.professionalTax.monthly), formatInr(d.professionalTax.payable)],
-    ['Total Deductions (B+C+D)', formatInr(b.totalDeductionsMonthly), formatInr(b.totalDeductionsPayable)],
-    ['Net Salary Payable : A - (B+C+D)', formatInr(b.netMonthly), formatInr(b.netPayable)],
+    ['Total Deductions (B+C)', formatInr(b.totalDeductionsMonthly), formatInr(b.totalDeductionsPayable)],
+    ['Net Salary Payable : A - (B+C)', formatInr(b.netMonthly), formatInr(b.netPayable)],
   ];
 
   const tableTopY = y;
   const tableHeight = estimateTableHeight(tableBody.length);
   drawTableWatermark(doc, logo, tableTopY, tableHeight);
 
-  const boldRows = new Set([3, 8, 9]);
+  const boldRows = new Set([3, 7, 8]);
   const deductionsHeaderRow = 4;
 
   autoTable(doc, {

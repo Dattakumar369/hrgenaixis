@@ -53,7 +53,7 @@ export default function EmployeeOnboardingPage() {
         <div className="card success-card">
           <div className="success-icon">✓</div>
           <h2>Onboarding complete</h2>
-          <p>HR has approved your onboarding. Welcome to Genaixis! View payslips from the sidebar.</p>
+          <p>HR has approved your onboarding. Welcome to PeopleHub! View payslips from the sidebar.</p>
         </div>
       )}
 

@@ -65,12 +65,13 @@ export default function SalaryForm({ employee, onSave, saving }) {
       </div>
 
       <p className="section-desc">
-        Basic = 50% of gross · HRA = 50% of basic · Special = remainder ·
-        PF = {pfPercent}% of MIN(basic, ₹15,000) · Professional tax = ₹{PAYROLL_DEFAULTS.professionalTax}
+        Total gross includes employer PF. Salary gross = total gross − employer PF.
+        Basic = 50% of salary gross · HRA = 50% of basic · Special = remainder ·
+        Employee PF = {pfPercent}% of MIN(basic, ₹15,000), pro-rated by paid days · Professional tax = ₹{PAYROLL_DEFAULTS.professionalTax}
       </p>
 
       <div className="form-group">
-        <label htmlFor="grossMonthly">Monthly gross salary (₹) *</label>
+        <label htmlFor="grossMonthly">Monthly total gross (₹) *</label>
         <input
           id="grossMonthly"
           name="grossMonthly"
@@ -108,9 +109,10 @@ export default function SalaryForm({ employee, onSave, saving }) {
           </div>
         </div>
         <p className="field-hint">
+          Salary gross ₹{preview.grossMonthly.toLocaleString('en-IN')} ·
           Basic ₹{preview.earnings.basic.payable.toLocaleString('en-IN')} · HRA ₹{preview.earnings.hra.payable.toLocaleString('en-IN')} ·
           Special ₹{preview.earnings.specialAllowance.payable.toLocaleString('en-IN')} ·
-          PF ₹{(preview.deductions.employeePF.payable + preview.deductions.employerPF.payable).toLocaleString('en-IN')}
+          Employee PF ₹{preview.deductions.employeePF.payable.toLocaleString('en-IN')}
         </p>
         <div className="salary-summary">
           <div><span>Gross earnings</span><strong>₹ {preview.grossPayable.toLocaleString('en-IN')}</strong></div>

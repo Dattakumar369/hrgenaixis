@@ -64,6 +64,20 @@ async function signInOrCreateHR(email, password) {
   }
 }
 
+export async function login(email, password) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!HR_EMAIL) {
+    throw new Error('HR email not configured. Set VITE_HR_EMAIL in .env / Vercel, then redeploy.');
+  }
+
+  if (normalizedEmail === HR_EMAIL) {
+    return loginHR(normalizedEmail, password);
+  }
+
+  return loginEmployee(normalizedEmail, password);
+}
+
 export async function loginHR(email, password) {
   const normalizedEmail = email.trim().toLowerCase();
 
@@ -80,10 +94,6 @@ export async function loginHR(email, password) {
 
 export async function loginEmployee(email, password) {
   const normalizedEmail = email.trim().toLowerCase();
-
-  if (normalizedEmail === HR_EMAIL) {
-    throw new Error('Use HR login for HR accounts');
-  }
 
   let credential;
 

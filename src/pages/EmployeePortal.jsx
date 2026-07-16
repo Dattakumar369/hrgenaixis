@@ -68,7 +68,7 @@ export default function EmployeePortal() {
           <div className="card success-card">
             <div className="success-icon">✓</div>
             <h2>Onboarding complete</h2>
-            <p>HR has approved your onboarding. Welcome to Genaixis!</p>
+            <p>HR has approved your onboarding. Welcome to PeopleHub!</p>
           </div>
         )}
 

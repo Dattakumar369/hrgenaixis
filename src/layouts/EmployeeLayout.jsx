@@ -21,8 +21,8 @@ export default function EmployeeLayout() {
     <div className="portal-shell">
       <aside className="portal-sidebar">
         <div className="sidebar-brand">
-          <BrandLogo size="sm" compact />
-          <span className="sidebar-portal-tag">Employee Portal</span>
+          <BrandLogo size="sm" compact showWordmark />
+          <span className="sidebar-portal-tag">My Workspace</span>
         </div>
 
         <nav className="sidebar-nav">

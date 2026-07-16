@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getAllEmployees, STATUS, EMPLOYMENT_STATUS } from '../../services/employeeService';
 import { employmentStatusOf } from '../../utils/employeeHelpers';
 import PageHeader from '../../components/PageHeader';
+import { APP_FULL_NAME } from '../../constants/brand';
 
 export default function HRDashboardHome() {
   const { user } = useAuth();
@@ -34,7 +35,7 @@ export default function HRDashboardHome() {
     <div className="portal-page">
       <PageHeader
         title="Dashboard"
-        subtitle={`Welcome back, ${user.email}`}
+        subtitle={`${APP_FULL_NAME} · Welcome back, ${user.email}`}
       />
 
       <div className="dashboard-stats portal-stats">

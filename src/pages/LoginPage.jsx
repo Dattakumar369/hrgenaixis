@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginHR, loginEmployee } from '../services/authService';
+import { login } from '../services/authService';
+import { isHrUser } from '../firebase';
 import BrandLogo from '../components/BrandLogo';
+import { APP_NAME, APP_TAGLINE, COMPANY_NAME, PLATFORM_MODULES } from '../constants/brand';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [loginType, setLoginType] = useState('employee');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,13 +18,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      if (loginType === 'hr') {
-        await loginHR(email, password);
-        navigate('/hr');
-      } else {
-        await loginEmployee(email, password);
-        navigate('/employee');
-      }
+      const credential = await login(email, password);
+      navigate(isHrUser(credential.user) ? '/hr' : '/employee');
     } catch (err) {
       setError(err?.message || 'Login failed. Check your credentials.');
     } finally {
@@ -35,102 +31,74 @@ export default function LoginPage() {
     <div className="login-page">
       <aside className="login-showcase">
         <div className="showcase-content">
-          <BrandLogo size="xl" onDark />
-          <h2 className="showcase-title">Employee Onboarding Portal</h2>
-          <p className="showcase-desc">
-            A secure workspace for Genaixis team members to complete onboarding and for HR to review submissions.
-          </p>
-          <div className="showcase-stats">
-            <div className="showcase-stat">
-              <span className="stat-num">01</span>
-              <span className="stat-label">Upload documents</span>
-            </div>
-            <div className="showcase-stat">
-              <span className="stat-num">02</span>
-              <span className="stat-label">HR verification</span>
-            </div>
-            <div className="showcase-stat">
-              <span className="stat-num">03</span>
-              <span className="stat-label">Join Genaixis</span>
-            </div>
+          <BrandLogo size="xl" onDark showWordmark />
+          <p className="showcase-desc showcase-desc--lead">{APP_TAGLINE}</p>
+
+          <div className="showcase-modules">
+            {PLATFORM_MODULES.map((label) => (
+              <span key={label} className="showcase-module showcase-module--live">
+                {label}
+              </span>
+            ))}
           </div>
         </div>
       </aside>
 
       <main className="login-panel">
-        <div className="login-card">
-          <div className="login-mobile-logo">
-            <BrandLogo size="md" />
+        <div className="login-panel-glow login-panel-glow--one" aria-hidden />
+        <div className="login-panel-glow login-panel-glow--two" aria-hidden />
+
+        <div className="login-panel-inner">
+          <div className="login-panel-top">
+            <BrandLogo size="sm" showWordmark />
           </div>
 
-          <div className="login-header">
-            <h1>Welcome back</h1>
-            <p>Sign in to your Genaixis account</p>
-          </div>
-
-          <div className="login-tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={loginType === 'employee'}
-              className={`login-tab ${loginType === 'employee' ? 'active' : ''}`}
-              onClick={() => { setLoginType('employee'); setError(''); }}
-            >
-              Employee
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={loginType === 'hr'}
-              className={`login-tab ${loginType === 'hr' ? 'active' : ''}`}
-              onClick={() => { setLoginType('hr'); setError(''); }}
-            >
-              HR Admin
-            </button>
-          </div>
-
-          {error && <div className="alert alert-error" role="alert">{error}</div>}
-
-          <form onSubmit={handleSubmit} className="login-form">
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={loginType === 'hr' ? 'hr@genaixis.com' : 'you@genaixis.com'}
-                required
-                autoComplete="email"
-              />
+          <div className="login-card">
+            <div className="login-header">
+              <span className="login-eyebrow">Secure sign in</span>
+              <h1>Welcome back</h1>
+              <p>Continue to {APP_NAME} with your work email and password.</p>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-              />
-            </div>
+            {error && <div className="alert alert-error login-alert" role="alert">{error}</div>}
 
-            <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
-              {loading ? 'Signing in…' : 'Sign in'}
-            </button>
-          </form>
+            <form onSubmit={handleSubmit} className="login-form">
+              <div className="form-group login-field">
+                <label htmlFor="email">Work email</label>
+                <input
+                  id="email"
+                  type="email"
+                  className="login-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@genaixis.com"
+                  required
+                  autoComplete="email"
+                />
+              </div>
 
-          <p className="login-hint">
-            {loginType === 'hr'
-              ? 'HR credentials are provided by your administrator.'
-              : 'Use the email and password shared by Genaixis HR after your invite.'}
-          </p>
+              <div className="form-group login-field">
+                <label htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  className="login-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  autoComplete="current-password"
+                />
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-lg login-submit" disabled={loading}>
+                {loading ? 'Signing in…' : `Sign in to ${APP_NAME}`}
+              </button>
+            </form>
+          </div>
+
+          <p className="login-footer">© {new Date().getFullYear()} {COMPANY_NAME}</p>
         </div>
-
-        <p className="login-footer">© {new Date().getFullYear()} Genaixis Pvt Ltd</p>
       </main>
     </div>
   );

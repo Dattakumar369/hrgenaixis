@@ -77,7 +77,7 @@ export default function CreateEmployeeForm({ hrEmail, onCreated }) {
     <div className="card create-employee-card">
       <h2>Invite Employee</h2>
       <p className="section-desc">
-        Create login credentials for a new Genaixis team member. Share the email and password after inviting.
+        Create login credentials for a new team member in PeopleHub. Share the email and password after inviting.
       </p>
 
       {status === 'success' && createdCredentials && (

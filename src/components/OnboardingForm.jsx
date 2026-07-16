@@ -231,7 +231,7 @@ export default function OnboardingForm({ employee, onSubmitted }) {
   return (
     <form className="card onboarding-form" onSubmit={handleSubmit} noValidate>
       <div className="form-header">
-        <div className="form-header-badge">Genaixis Onboarding</div>
+        <div className="form-header-badge">PeopleHub · Onboarding</div>
         <h1>Complete your profile</h1>
         <p>Submit your details and documents for HR review.</p>
       </div>
