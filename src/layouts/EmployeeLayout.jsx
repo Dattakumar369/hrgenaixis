@@ -6,6 +6,7 @@ import BrandLogo from '../components/BrandLogo';
 const NAV = [
   { to: '/employee', end: true, label: 'Onboarding', icon: '◎' },
   { to: '/employee/payslips', label: 'My Payslips', icon: '₹' },
+  { to: '/employee/holidays', label: 'Holidays', icon: '◷' },
 ];
 
 export default function EmployeeLayout() {

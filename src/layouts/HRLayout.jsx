@@ -8,6 +8,7 @@ const NAV = [
   { to: '/hr/employees', label: 'Employees', icon: '☰' },
   { to: '/hr/onboarding', label: 'Onboarding', icon: '◎' },
   { to: '/hr/payroll', label: 'Payroll', icon: '₹' },
+  { to: '/hr/holidays', label: 'Holidays', icon: '◷' },
 ];
 
 export default function HRLayout() {
@@ -24,7 +25,7 @@ export default function HRLayout() {
       <aside className="portal-sidebar">
         <div className="sidebar-brand">
           <BrandLogo size="sm" compact showWordmark />
-          <span className="sidebar-portal-tag">HR Console</span>
+          <span className="sidebar-portal-tag">HR Admin</span>
         </div>
 
         <nav className="sidebar-nav">

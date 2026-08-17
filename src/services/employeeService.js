@@ -33,23 +33,10 @@ export const EMPLOYMENT_STATUS_LABELS = {
   [EMPLOYMENT_STATUS.ABSCONDED]: 'Absconded',
 };
 
-function mapFirestoreError(error, contextEmail) {
-  const code = error?.code || '';
-  const message = error?.message || '';
-  const signedInAs = auth.currentUser?.email || contextEmail || 'not signed in';
+import { mapStorageError, USER_MESSAGES, mapAuthError } from '../utils/userMessages';
 
-  if (code === 'permission-denied' || message.includes('permission-denied') || message.includes('insufficient permissions')) {
-    return (
-      `Firestore blocked this action (signed in as ${signedInAs}). ` +
-      `Publish firestore.rules in Firebase Console → Firestore → Rules. ` +
-      `Set hrEmail() to "${HR_EMAIL || 'hr@company.com'}" (same as VITE_HR_EMAIL), then click Publish.`
-    );
-  }
-  if (message.includes('not-found') || message.includes('Unavailable')) {
-    return 'Firestore is not set up. Enable it in Firebase Console → Build → Firestore Database.';
-  }
-
-  return message || 'Failed to save employee invite.';
+function mapEmployeeError(error, fallback = USER_MESSAGES.saveFailed) {
+  return mapStorageError(error, fallback);
 }
 
 async function provisionEmployeeAuthAccount(email, password) {
@@ -67,8 +54,8 @@ async function provisionEmployeeAuthAccount(email, password) {
     }
 
     const message = error?.code === 'auth/weak-password'
-      ? 'Password is too weak. Use at least 6 characters.'
-      : error?.message || 'Failed to create employee login account.';
+      ? USER_MESSAGES.weakPassword
+      : mapAuthError(error);
     throw new Error(message);
   }
 }
@@ -83,7 +70,7 @@ export async function getInviteByEmail(email) {
     const employeeDoc = snapshot.docs[0];
     return { id: employeeDoc.id, ...employeeDoc.data() };
   } catch (error) {
-    throw new Error(mapFirestoreError(error));
+    throw new Error(mapEmployeeError(error));
   }
 }
 
@@ -98,13 +85,11 @@ export async function getPendingInviteByEmail(email) {
 
 export async function createEmployeeRecord(data, hrEmail) {
   if (!auth.currentUser) {
-    throw new Error('HR session expired. Log out and log in again as HR.');
+    throw new Error(USER_MESSAGES.hrSessionExpired);
   }
 
   if (auth.currentUser.email?.toLowerCase() !== HR_EMAIL) {
-    throw new Error(
-      `You are signed in as ${auth.currentUser.email}. HR actions require ${HR_EMAIL}. Log out and sign in with the HR account.`
-    );
+    throw new Error(USER_MESSAGES.wrongHrAccount(HR_EMAIL));
   }
 
   const email = data.email.trim().toLowerCase();
@@ -112,7 +97,7 @@ export async function createEmployeeRecord(data, hrEmail) {
   try {
     const existing = await getInviteByEmail(email);
     if (existing) {
-      throw new Error('An employee with this email is already invited or registered.');
+      throw new Error(USER_MESSAGES.duplicateEmployee);
     }
 
     const docRef = await addDoc(collection(db, 'employees'), {
@@ -139,7 +124,7 @@ export async function createEmployeeRecord(data, hrEmail) {
     });
 
     if (!data.password || data.password.length < 6) {
-      throw new Error('Temporary password must be at least 6 characters.');
+      throw new Error(USER_MESSAGES.tempPasswordShort);
     }
 
     await provisionEmployeeAuthAccount(email, data.password);
@@ -147,7 +132,7 @@ export async function createEmployeeRecord(data, hrEmail) {
     return docRef.id;
   } catch (error) {
     if (error.message?.includes('already invited')) throw error;
-    throw new Error(mapFirestoreError(error));
+    throw new Error(mapEmployeeError(error));
   }
 }
 
@@ -176,7 +161,7 @@ export async function ensureEmployeeLinked(authUser) {
 
     return { ...invite, uid: authUser.uid };
   } catch (error) {
-    throw new Error(mapFirestoreError(error));
+    throw new Error(mapEmployeeError(error));
   }
 }
 
@@ -199,13 +184,13 @@ export async function getAllEmployees() {
       ...employeeDoc.data(),
     }));
   } catch (error) {
-    throw new Error(mapFirestoreError(error));
+    throw new Error(mapEmployeeError(error));
   }
 }
 
 export async function submitOnboarding(employeeId, uid, formData, documents) {
   if (!employeeId || !uid) {
-    throw new Error('Account not linked. Log out and log in again with your HR invite credentials.');
+    throw new Error(USER_MESSAGES.accountNotLinked);
   }
 
   const { aadharNumber, panNumber, existingGrossMonthly, employeeCode, uan, bankName, bankAccount, ...employeeData } = formData;
@@ -256,7 +241,7 @@ export async function submitOnboarding(employeeId, uid, formData, documents) {
     });
   } catch (error) {
     if (error.message && !error.code) throw error;
-    throw new Error(mapFirestoreError(error));
+    throw new Error(mapEmployeeError(error));
   }
 }
 
@@ -301,7 +286,7 @@ export async function rejectEmployee(employeeId, hrEmail, reason) {
 /** Set lifecycle status (active / resigned / absconded) for an onboarded employee. */
 export async function updateEmploymentStatus(employeeId, employmentStatus, hrEmail) {
   if (!Object.values(EMPLOYMENT_STATUS).includes(employmentStatus)) {
-    throw new Error('Invalid employment status.');
+    throw new Error('Please select a valid employment status.');
   }
   try {
     await updateDoc(doc(db, 'employees', employeeId), {
@@ -310,7 +295,7 @@ export async function updateEmploymentStatus(employeeId, employmentStatus, hrEma
       employmentStatusUpdatedBy: hrEmail,
     });
   } catch (error) {
-    throw new Error(mapFirestoreError(error));
+    throw new Error(mapEmployeeError(error));
   }
 }
 
@@ -330,14 +315,21 @@ export async function updateEmployeeDetails(employeeId, data) {
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
-    throw new Error(mapFirestoreError(error));
+    throw new Error(mapEmployeeError(error));
   }
 }
 
 export async function deleteEmployee(employeeId) {
   try {
+    const subcollections = ['payslips', 'documents'];
+    await Promise.all(
+      subcollections.map(async (name) => {
+        const snapshot = await getDocs(collection(db, 'employees', employeeId, name));
+        await Promise.all(snapshot.docs.map((item) => deleteDoc(item.ref)));
+      }),
+    );
     await deleteDoc(doc(db, 'employees', employeeId));
   } catch (error) {
-    throw new Error(mapFirestoreError(error));
+    throw new Error(mapEmployeeError(error));
   }
 }

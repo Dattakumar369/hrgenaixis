@@ -1,6 +1,8 @@
 import { collection, addDoc, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
+import { mapUploadError as mapUploadStorageError, USER_MESSAGES } from '../utils/userMessages';
+
 const MAX_FILE_SIZE = 700 * 1024;
 const ALLOWED_TYPES = [
   'application/pdf',
@@ -9,24 +11,18 @@ const ALLOWED_TYPES = [
   'image/png',
 ];
 
+
 function mapUploadError(error) {
-  const code = error?.code || '';
-  if (code === 'permission-denied') {
-    return 'Permission denied uploading documents. In Firebase Console → Firestore → Rules, paste firestore.rules from this project and click Publish.';
-  }
-  if (code === 'invalid-argument' || error?.message?.includes('size')) {
-    return 'File too large. Each file must be 700 KB or less.';
-  }
-  return error?.message || 'Failed to upload document.';
+  return mapUploadStorageError(error);
 }
 
 export function validateFile(file) {
   if (!file) return 'Please select a file';
   if (!ALLOWED_TYPES.includes(file.type)) {
-    return 'Only PDF, JPG, and PNG files are allowed';
+    return USER_MESSAGES.fileTypeInvalid;
   }
   if (file.size > MAX_FILE_SIZE) {
-    return 'File size must be 700 KB or less (Firestore free tier limit)';
+    return USER_MESSAGES.fileTooLarge;
   }
   return null;
 }
@@ -35,7 +31,7 @@ function readFileAsBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onerror = () => reject(new Error('Could not read the selected file. Please try another file.'));
     reader.readAsDataURL(file);
   });
 }

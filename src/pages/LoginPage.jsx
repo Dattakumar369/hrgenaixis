@@ -4,6 +4,7 @@ import { login } from '../services/authService';
 import { isHrUser } from '../firebase';
 import BrandLogo from '../components/BrandLogo';
 import { APP_NAME, APP_TAGLINE, COMPANY_NAME, PLATFORM_MODULES } from '../constants/brand';
+import { toUserMessage, USER_MESSAGES } from '../utils/userMessages';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function LoginPage() {
       const credential = await login(email, password);
       navigate(isHrUser(credential.user) ? '/hr' : '/employee');
     } catch (err) {
-      setError(err?.message || 'Login failed. Check your credentials.');
+      setError(toUserMessage(err, USER_MESSAGES.loginFailed));
     } finally {
       setLoading(false);
     }

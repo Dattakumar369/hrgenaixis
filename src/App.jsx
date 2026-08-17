@@ -8,8 +8,10 @@ import HRDashboardHome from './pages/hr/HRDashboardHome';
 import HREmployeesPage from './pages/hr/HREmployeesPage';
 import HROnboardingPage from './pages/hr/HROnboardingPage';
 import HRPayrollPage from './pages/hr/HRPayrollPage';
+import HRHolidaysPage from './pages/hr/HRHolidaysPage';
 import EmployeeOnboardingPage from './pages/employee/EmployeeOnboardingPage';
 import EmployeePayslipsPage from './pages/employee/EmployeePayslipsPage';
+import EmployeeHolidaysPage from './pages/employee/EmployeeHolidaysPage';
 
 export default function App() {
   return (
@@ -26,6 +28,7 @@ export default function App() {
               <Route path="employees" element={<HREmployeesPage />} />
               <Route path="onboarding" element={<HROnboardingPage />} />
               <Route path="payroll" element={<HRPayrollPage />} />
+              <Route path="holidays" element={<HRHolidaysPage />} />
             </Route>
           </Route>
 
@@ -33,6 +36,7 @@ export default function App() {
             <Route path="/employee" element={<EmployeeLayout />}>
               <Route index element={<EmployeeOnboardingPage />} />
               <Route path="payslips" element={<EmployeePayslipsPage />} />
+              <Route path="holidays" element={<EmployeeHolidaysPage />} />
             </Route>
           </Route>
 

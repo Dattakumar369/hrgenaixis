@@ -5,6 +5,7 @@ import { logout } from '../services/authService';
 import { ensureEmployeeLinked, STATUS } from '../services/employeeService';
 import OnboardingForm from '../components/OnboardingForm';
 import AppHeader from '../components/AppHeader';
+import { toUserMessage, USER_MESSAGES } from '../utils/userMessages';
 
 export default function EmployeePortal() {
   const { user } = useAuth();
@@ -23,7 +24,7 @@ export default function EmployeePortal() {
         setError('No onboarding record found for your account. Contact HR.');
       }
     } catch (err) {
-      setError(err?.message || 'Failed to load your onboarding record.');
+      setError(toUserMessage(err, USER_MESSAGES.loadOnboardingFailed));
     } finally {
       setLoading(false);
     }

@@ -74,5 +74,11 @@ service cloud.firestore {
         allow create, update, delete: if isHr();
       }
     }
+
+    // Company holiday calendar — HR manages; all signed-in users can view
+    match /holidays/{holidayId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isHr();
+    }
   }
 }

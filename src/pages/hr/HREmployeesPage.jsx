@@ -10,6 +10,7 @@ import { exportEmployeesToExcel } from '../../services/exportService';
 import { employmentStatusOf, formatDate } from '../../utils/employeeHelpers';
 import EmployeeReviewPanel from '../../components/EmployeeReviewPanel';
 import PageHeader from '../../components/PageHeader';
+import { toUserMessage, USER_MESSAGES } from '../../utils/userMessages';
 
 export default function HREmployeesPage() {
   const { user } = useAuth();
@@ -26,7 +27,7 @@ export default function HREmployeesPage() {
     try {
       setEmployees(await getAllEmployees());
     } catch (err) {
-      setError(err?.message || 'Failed to load employees.');
+      setError(toUserMessage(err, USER_MESSAGES.loadEmployeesFailed));
     } finally {
       setLoading(false);
     }
@@ -146,7 +147,10 @@ export default function HREmployeesPage() {
                 employee={selected}
                 hrEmail={user.email}
                 onUpdated={load}
-                onDeleted={() => setSelectedId(null)}
+                onDeleted={() => {
+                  setSelectedId(null);
+                  load();
+                }}
               />
             </div>
           ) : (

@@ -10,6 +10,7 @@ import {
   EMPLOYMENT_STATUS_LABELS,
 } from '../services/employeeService';
 import { getDocumentUrl } from '../services/documentService';
+import { toUserMessage, USER_MESSAGES } from '../utils/userMessages';
 
 function DetailRow({ label, value }) {
   if (!value) return null;
@@ -112,7 +113,7 @@ export default function EmployeeReviewPanel({ employee, hrEmail, onUpdated, onDe
       setEditing(false);
       onUpdated?.();
     } catch (err) {
-      setError(err?.message || 'Failed to update employee.');
+      setError(toUserMessage(err, USER_MESSAGES.saveFailed));
     } finally {
       setLoading(false);
     }
@@ -126,7 +127,7 @@ export default function EmployeeReviewPanel({ employee, hrEmail, onUpdated, onDe
       await updateEmploymentStatus(employee.id, status, hrEmail);
       onUpdated?.();
     } catch (err) {
-      setError(err?.message || 'Failed to update status.');
+      setError(toUserMessage(err, 'Could not update employment status. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -144,7 +145,7 @@ export default function EmployeeReviewPanel({ employee, hrEmail, onUpdated, onDe
       onDeleted?.();
       onUpdated?.();
     } catch (err) {
-      setError(err?.message || 'Failed to delete employee.');
+      setError(toUserMessage(err, USER_MESSAGES.deleteFailed));
     } finally {
       setLoading(false);
     }
@@ -157,7 +158,7 @@ export default function EmployeeReviewPanel({ employee, hrEmail, onUpdated, onDe
       await approveEmployee(employee.id, hrEmail);
       onUpdated?.();
     } catch (err) {
-      setError(err?.message || 'Failed to approve');
+      setError(toUserMessage(err, 'Could not approve onboarding. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -177,7 +178,7 @@ export default function EmployeeReviewPanel({ employee, hrEmail, onUpdated, onDe
       setRejectReason('');
       onUpdated?.();
     } catch (err) {
-      setError(err?.message || 'Failed to reject');
+      setError(toUserMessage(err, 'Could not reject onboarding. Please try again.'));
     } finally {
       setLoading(false);
     }

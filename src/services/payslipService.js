@@ -11,12 +11,10 @@ import { db } from '../firebase';
 import { payslipDocId, resolveEmployeePayrollInfo } from '../utils/employeeHelpers';
 import { DEFAULT_SALARY, PAYROLL_DEFAULTS, computePayslipBreakdown } from '../utils/payrollCalculator';
 
-function mapFirestoreError(error) {
-  const message = error?.message || '';
-  if (message.includes('permission-denied')) {
-    return 'Firestore blocked this action. Publish updated firestore.rules in Firebase Console.';
-  }
-  return message || 'Payslip operation failed.';
+import { mapStorageError, USER_MESSAGES } from '../utils/userMessages';
+
+function mapPayslipError(error) {
+  return mapStorageError(error, USER_MESSAGES.payslipFailed);
 }
 
 function resolveGrossMonthly(employee) {
@@ -51,7 +49,7 @@ export async function updateSalaryStructure(employeeId, salaryData) {
     });
     return salary;
   } catch (error) {
-    throw new Error(mapFirestoreError(error));
+    throw new Error(mapPayslipError(error));
   }
 }
 
@@ -68,10 +66,10 @@ export async function generatePayslip(employee, options, hrEmail) {
 
   const grossMonthly = resolveGrossMonthly(employee);
   if (grossMonthly <= 0) {
-    throw new Error('Set monthly gross salary before generating a payslip.');
+    throw new Error('Please set the employee\'s monthly gross salary before generating a payslip.');
   }
   if (!paidDays || paidDays <= 0) {
-    throw new Error('Enter paid days for this payslip.');
+    throw new Error('Please enter paid days for this payroll month.');
   }
 
   const payrollInfo = resolveEmployeePayrollInfo(employee);
@@ -115,7 +113,7 @@ export async function generatePayslip(employee, options, hrEmail) {
     await setDoc(doc(db, 'employees', employee.id, 'payslips', id), payload, { merge: true });
     return { id, ...payload };
   } catch (error) {
-    throw new Error(mapFirestoreError(error));
+    throw new Error(mapPayslipError(error));
   }
 }
 
@@ -126,7 +124,7 @@ export async function getEmployeePayslips(employeeId) {
       .map((d) => ({ id: d.id, ...d.data() }))
       .sort((a, b) => b.year - a.year || b.month - a.month);
   } catch (error) {
-    throw new Error(mapFirestoreError(error));
+    throw new Error(mapPayslipError(error));
   }
 }
 
@@ -136,6 +134,6 @@ export async function getPayslip(employeeId, payslipId) {
     if (!snap.exists()) return null;
     return { id: snap.id, ...snap.data() };
   } catch (error) {
-    throw new Error(mapFirestoreError(error));
+    throw new Error(mapPayslipError(error));
   }
 }

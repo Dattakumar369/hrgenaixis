@@ -3,40 +3,20 @@ import {
   signOut,
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
-import { auth, HR_EMAIL, FIREBASE_PROJECT_ID } from '../firebase';
+import { auth, HR_EMAIL } from '../firebase';
 import {
   ensureEmployeeLinked,
   getInviteByEmail,
   getPendingInviteByEmail,
   STATUS,
 } from './employeeService';
-
-function mapAuthError(error) {
-  const code = error?.code || '';
-
-  switch (code) {
-    case 'auth/configuration-not-found':
-      return 'Firebase Authentication is not set up yet. Open Firebase Console → Authentication → Get started → enable Email/Password.';
-    case 'auth/operation-not-allowed':
-      return 'Email/Password sign-in is disabled. Enable it in Firebase Console → Authentication → Sign-in method.';
-    case 'auth/email-already-in-use':
-      return 'This email is already registered. Try logging in with the same password HR shared with you.';
-    case 'auth/invalid-credential':
-    case 'auth/wrong-password':
-    case 'auth/user-not-found':
-      return 'Invalid email or password. Use the credentials HR shared when you were invited.';
-    case 'auth/invalid-email':
-      return 'Invalid email address.';
-    case 'auth/weak-password':
-      return 'Password is too weak. Use at least 6 characters.';
-    case 'auth/too-many-requests':
-      return 'Too many attempts. Please wait a few minutes and try again.';
-    case 'auth/network-request-failed':
-      return 'Network error. Check your internet connection.';
-    default:
-      return error?.message || 'Login failed. Check Firebase Authentication setup.';
-  }
-}
+import {
+  mapAuthError,
+  mapStorageError,
+  USER_MESSAGES,
+  toUserMessage,
+  isTechnicalMessage,
+} from '../utils/userMessages';
 
 async function signInOrCreateHR(email, password) {
   try {
@@ -54,10 +34,7 @@ async function signInOrCreateHR(email, password) {
       error.code === 'auth/invalid-credential' ||
       error.code === 'auth/wrong-password'
     ) {
-      throw new Error(
-        'Incorrect HR password. Reset it in Firebase Console → Authentication → Users → ' +
-        `${HR_EMAIL} → reset password, then sign in with the new password.`
-      );
+      throw new Error(USER_MESSAGES.hrWrongPassword);
     }
 
     throw new Error(mapAuthError(error));
@@ -68,7 +45,7 @@ export async function login(email, password) {
   const normalizedEmail = email.trim().toLowerCase();
 
   if (!HR_EMAIL) {
-    throw new Error('HR email not configured. Set VITE_HR_EMAIL in .env / Vercel, then redeploy.');
+    throw new Error(USER_MESSAGES.hrEmailRequired);
   }
 
   if (normalizedEmail === HR_EMAIL) {
@@ -82,11 +59,11 @@ export async function loginHR(email, password) {
   const normalizedEmail = email.trim().toLowerCase();
 
   if (!HR_EMAIL) {
-    throw new Error('HR email not configured. Set VITE_HR_EMAIL in .env / Vercel, then redeploy.');
+    throw new Error(USER_MESSAGES.hrEmailRequired);
   }
 
   if (normalizedEmail !== HR_EMAIL) {
-    throw new Error(`Invalid HR email. Use ${HR_EMAIL}.`);
+    throw new Error(USER_MESSAGES.wrongHrAccount(HR_EMAIL));
   }
 
   return signInOrCreateHR(normalizedEmail, password);
@@ -113,19 +90,17 @@ export async function loginEmployee(email, password) {
     try {
       invite = await getPendingInviteByEmail(normalizedEmail);
     } catch (lookupError) {
-      const blocked = lookupError?.message?.includes('Firestore blocked')
-        || lookupError?.message?.includes('permission');
-
-      if (blocked) {
+      if (isTechnicalMessage(lookupError?.message)) {
         throw new Error(
-          'Your account may already be set up. Use the exact password HR shared. ' +
-          'If login still fails, ask HR to reset your password in Firebase Console → Authentication → Users.'
+          'Your account may already be set up. Use the password HR shared with you. If login still fails, ask HR to reset your password.'
         );
       }
 
       throw new Error(
-        lookupError?.message ||
-          'Could not verify your invite. Check the email matches what HR used exactly, then try again.'
+        toUserMessage(
+          lookupError,
+          'Could not verify your invitation. Check that you are using the same email HR used, then try again.'
+        )
       );
     }
 
@@ -133,31 +108,23 @@ export async function loginEmployee(email, password) {
       try {
         const existing = await getInviteByEmail(normalizedEmail);
         if (existing?.uid) {
-          throw new Error('Invalid email or password. Use the credentials HR shared when you were invited.');
+          throw new Error(USER_MESSAGES.loginFailed);
         }
       } catch (lookupError) {
-        if (lookupError.message.includes('Invalid email or password')) {
+        if (lookupError.message === USER_MESSAGES.loginFailed) {
           throw lookupError;
         }
 
-        const blocked = lookupError?.message?.includes('Firestore blocked')
-          || lookupError?.message?.includes('permission');
-
-        if (blocked) {
-          throw new Error(
-            'Invalid email or password. Your invite is already linked — use the password HR shared.'
-          );
+        if (isTechnicalMessage(lookupError?.message)) {
+          throw new Error(USER_MESSAGES.loginFailed);
         }
       }
 
-      throw new Error(
-        `No invite found for ${normalizedEmail}. Ask HR to invite you from the live portal ` +
-        `(project: ${FIREBASE_PROJECT_ID || 'unknown'}). Use the exact email, e.g. @genaixis.com.`
-      );
+      throw new Error(USER_MESSAGES.inviteNotFound);
     }
 
     if (invite.status !== STATUS.INVITED && invite.status !== STATUS.REJECTED) {
-      throw new Error('Invalid email or password. Use the credentials HR shared when you were invited.');
+      throw new Error(USER_MESSAGES.loginFailed);
     }
 
     try {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { auth } from '../firebase';
 import { submitOnboarding } from '../services/employeeService';
+import { toUserMessage, USER_MESSAGES } from '../utils/userMessages';
 import FileUploadField from './FileUploadField';
 import StepIndicator from './StepIndicator';
 import PreviousCompanyBlock, { createEmptyPreviousCompany } from './PreviousCompanyBlock';
@@ -215,7 +216,7 @@ export default function OnboardingForm({ employee, onSubmitted }) {
     } catch (err) {
       console.error(err);
       setStatus('error');
-      setErrorMessage(err?.message || 'Failed to save employee data.');
+      setErrorMessage(toUserMessage(err, USER_MESSAGES.saveFailed));
     }
   }
 

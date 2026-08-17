@@ -19,6 +19,7 @@ import {
 } from '../../utils/payrollPeriod';
 import SalaryForm from '../../components/SalaryForm';
 import PageHeader from '../../components/PageHeader';
+import { toUserMessage, USER_MESSAGES } from '../../utils/userMessages';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -147,7 +148,7 @@ export default function HRPayrollPage() {
       await loadEmployees();
       setSuccess('Salary details updated.');
     } catch (err) {
-      setError(err?.message || 'Failed to save salary.');
+      setError(toUserMessage(err, USER_MESSAGES.saveFailed));
       throw err;
     } finally {
       setSaving(false);
@@ -182,7 +183,7 @@ export default function HRPayrollPage() {
       await downloadPayslipPdf(payslip, fresh);
       setSuccess(`Payslip generated for ${formatMonthYear(month, year)}. Employee can download from My Payslips.`);
     } catch (err) {
-      setError(err?.message || 'Failed to generate payslip.');
+      setError(toUserMessage(err, USER_MESSAGES.payslipFailed));
     } finally {
       setGenerating(false);
     }

@@ -107,7 +107,10 @@ export default function HROnboardingPage() {
                 employee={selected}
                 hrEmail={user.email}
                 onUpdated={load}
-                onDeleted={() => setSelectedId(null)}
+                onDeleted={() => {
+                  setSelectedId(null);
+                  load();
+                }}
               />
             </div>
           ) : (

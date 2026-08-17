@@ -5,6 +5,7 @@ import { getEmployeePayslips } from '../../services/payslipService';
 import { downloadPayslipPdf } from '../../services/payslipPdf';
 import { formatMonthYear } from '../../utils/employeeHelpers';
 import PageHeader from '../../components/PageHeader';
+import { toUserMessage, USER_MESSAGES } from '../../utils/userMessages';
 
 export default function EmployeePayslipsPage() {
   const { user } = useAuth();
@@ -31,7 +32,7 @@ export default function EmployeePayslipsPage() {
         }
         setPayslips(await getEmployeePayslips(record.id));
       } catch (err) {
-        setError(err?.message || 'Failed to load payslips.');
+        setError(toUserMessage(err, USER_MESSAGES.loadPayslipsFailed));
       } finally {
         setLoading(false);
       }

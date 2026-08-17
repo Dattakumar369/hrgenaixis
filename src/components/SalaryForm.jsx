@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PAYROLL_DEFAULTS, computePayslipBreakdown } from '../utils/payrollCalculator';
 import { resolveEmployeePayrollInfo } from '../utils/employeeHelpers';
+import { toUserMessage, USER_MESSAGES } from '../utils/userMessages';
 
 function InfoRow({ label, value }) {
   return (
@@ -44,7 +45,7 @@ export default function SalaryForm({ employee, onSave, saving }) {
       });
       setMessage('Salary details saved.');
     } catch (err) {
-      setMessage(err?.message || 'Failed to save.');
+      setMessage(toUserMessage(err, USER_MESSAGES.saveFailed));
     }
   }
 

@@ -9,6 +9,7 @@ export const PLATFORM_MODULES = [
   'Documents',
   'Attendance',
   'Leave',
+  'Holidays',
   'Performance',
   'Tracking',
   'HR Operations',

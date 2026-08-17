@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createEmployeeRecord } from '../services/employeeService';
+import { toUserMessage } from '../utils/userMessages';
 
 const DEPARTMENTS = [
   'Engineering',
@@ -69,7 +70,7 @@ export default function CreateEmployeeForm({ hrEmail, onCreated }) {
       onCreated?.();
     } catch (err) {
       setStatus('error');
-      setErrorMessage(err?.message || 'Failed to create employee account.');
+      setErrorMessage(toUserMessage(err, 'Could not create the employee account. Please try again.'));
     }
   }
 

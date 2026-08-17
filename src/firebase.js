@@ -21,10 +21,7 @@ const missingKeys = [
 ].filter(([, value]) => !value).map(([key]) => key);
 
 if (missingKeys.length > 0) {
-  throw new Error(
-    `Firebase config missing: ${missingKeys.join(', ')}. ` +
-    'Add these in Vercel → Project → Settings → Environment Variables, then redeploy.'
-  );
+  throw new Error('PeopleHub could not start. Please contact your administrator.');
 }
 
 const app = initializeApp(firebaseConfig);
