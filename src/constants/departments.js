@@ -1,9 +1,10 @@
 export const DEPARTMENTS = [
-  'Interns',
-  'Development',
-  'DevOps',
-  'Testing',
-  'Operations',
+  'Engineering',
+  'Design',
+  'Marketing',
+  'Sales',
   'Human Resources',
+  'Finance',
+  'Operations',
   'Other',
 ];
