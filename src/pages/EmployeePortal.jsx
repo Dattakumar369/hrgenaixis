@@ -5,6 +5,7 @@ import { logout } from '../services/authService';
 import { ensureEmployeeLinked, STATUS } from '../services/employeeService';
 import OnboardingForm from '../components/OnboardingForm';
 import AppHeader from '../components/AppHeader';
+import { APP_NAME } from '../constants/brand';
 import { toUserMessage, USER_MESSAGES } from '../utils/userMessages';
 
 export default function EmployeePortal() {
@@ -69,7 +70,7 @@ export default function EmployeePortal() {
           <div className="card success-card">
             <div className="success-icon">✓</div>
             <h2>Onboarding complete</h2>
-            <p>HR has approved your onboarding. Welcome to PeopleHub!</p>
+            <p>HR has approved your onboarding. Welcome to {APP_NAME}!</p>
           </div>
         )}
 

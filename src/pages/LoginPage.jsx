@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../services/authService';
 import { isHrUser } from '../firebase';
 import BrandLogo from '../components/BrandLogo';
-import { APP_NAME, APP_TAGLINE, COMPANY_NAME, PLATFORM_MODULES, WORK_EMAIL_DOMAIN } from '../constants/brand';
+import { APP_NAME, APP_TAGLINE, COMPANY_NAME, DOCUMENT_TITLE, PLATFORM_MODULES, WORK_EMAIL_DOMAIN } from '../constants/brand';
 import { extractEmailLocalPart, normalizeWorkEmail } from '../utils/workEmail';
 import { toUserMessage, USER_MESSAGES } from '../utils/userMessages';
 
@@ -13,6 +13,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    document.title = `Sign in — ${DOCUMENT_TITLE}`;
+  }, []);
 
   function handleEmailChange(e) {
     setEmailLocal(extractEmailLocalPart(e.target.value));

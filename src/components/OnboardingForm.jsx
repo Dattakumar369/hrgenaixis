@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { auth } from '../firebase';
 import { submitOnboarding } from '../services/employeeService';
+import { APP_NAME } from '../constants/brand';
 import { toUserMessage, USER_MESSAGES } from '../utils/userMessages';
 import FileUploadField from './FileUploadField';
 import StepIndicator from './StepIndicator';
@@ -37,6 +38,18 @@ function buildInitialForm(employee) {
   };
 }
 
+function isPreviousCompanyEmpty(company) {
+  return !company.companyName.trim()
+    && !company.offerLetter
+    && !company.relievingLetter
+    && !(company.paySlips?.length)
+    && !(company.form16?.length);
+}
+
+function getActivePreviousCompanies(previousCompanies) {
+  return previousCompanies.filter((company) => !isPreviousCompanyEmpty(company));
+}
+
 function validate(form, documents, previousCompanies) {
   const errors = {};
   const docErrors = {};
@@ -44,18 +57,9 @@ function validate(form, documents, previousCompanies) {
 
   if (!form.phone.trim()) errors.phone = 'Phone number is required';
 
-  if (!form.employeeCode.trim()) {
-    errors.employeeCode = 'Employee ID is required';
-  }
-
-  if (!form.uan.trim()) {
-    errors.uan = 'UAN is required';
-  } else if (!/^\d{12}$/.test(form.uan.replace(/\s/g, ''))) {
+  if (form.uan.trim() && !/^\d{12}$/.test(form.uan.replace(/\s/g, ''))) {
     errors.uan = 'Enter a valid 12-digit UAN';
   }
-
-  if (!form.bankName.trim()) errors.bankName = 'Bank name is required';
-  if (!form.bankAccount.trim()) errors.bankAccount = 'Account number is required';
 
   if (!form.aadharNumber.trim()) {
     errors.aadharNumber = 'Aadhar number is required';
@@ -86,7 +90,8 @@ function validate(form, documents, previousCompanies) {
     docErrors.educational = 'Upload at least one educational document';
   }
 
-  previousCompanies.forEach((company, index) => {
+  getActivePreviousCompanies(previousCompanies).forEach((company) => {
+    const index = previousCompanies.indexOf(company);
     const entry = {};
     if (!company.companyName.trim()) entry.companyName = 'Company name is required';
     if (!company.offerLetter) entry.offerLetter = 'Offer letter is required';
@@ -95,10 +100,6 @@ function validate(form, documents, previousCompanies) {
     if (!company.form16?.length) entry.form16 = 'Upload Form 16';
     if (Object.keys(entry).length > 0) companyErrors[index] = entry;
   });
-
-  if (previousCompanies.length === 0) {
-    companyErrors[0] = { companyName: 'Add at least one previous company' };
-  }
 
   return { errors, docErrors, companyErrors };
 }
@@ -111,7 +112,7 @@ export default function OnboardingForm({ employee, onSubmitted }) {
     currentCompany: { ...INITIAL_CURRENT_COMPANY },
     educational: null,
   });
-  const [previousCompanies, setPreviousCompanies] = useState([createEmptyPreviousCompany()]);
+  const [previousCompanies, setPreviousCompanies] = useState([]);
   const [errors, setErrors] = useState({});
   const [docErrors, setDocErrors] = useState({});
   const [companyErrors, setCompanyErrors] = useState({});
@@ -182,8 +183,8 @@ export default function OnboardingForm({ employee, onSubmitted }) {
       ...form,
       aadharNumber: form.aadharNumber.replace(/\s/g, ''),
       panNumber: form.panNumber.trim().toUpperCase(),
-      uan: form.uan.replace(/\s/g, ''),
-      employeeCode: form.employeeCode.trim(),
+      uan: form.uan.trim() ? form.uan.replace(/\s/g, '') : '',
+      employeeCode: (employee.salary?.employeeCode || employee.employeeCode || '').trim(),
       bankName: form.bankName.trim(),
       bankAccount: form.bankAccount.trim(),
       existingGrossMonthly: employee.salary?.grossMonthly || 0,
@@ -208,9 +209,10 @@ export default function OnboardingForm({ employee, onSubmitted }) {
 
     try {
       const uid = auth.currentUser?.uid || employee.uid;
+      const activePreviousCompanies = getActivePreviousCompanies(previousCompanies);
       await submitOnboarding(employee.id, uid, normalizedForm, {
         ...documents,
-        previousCompanies,
+        previousCompanies: activePreviousCompanies,
       });
       onSubmitted?.();
     } catch (err) {
@@ -231,7 +233,7 @@ export default function OnboardingForm({ employee, onSubmitted }) {
   return (
     <form className="card onboarding-form" onSubmit={handleSubmit} noValidate>
       <div className="form-header">
-        <div className="form-header-badge">PeopleHub · Onboarding</div>
+        <div className="form-header-badge">{APP_NAME} · Onboarding</div>
         <h1>Complete your profile</h1>
         <p>Submit your details and documents for HR review.</p>
       </div>
@@ -279,35 +281,31 @@ export default function OnboardingForm({ employee, onSubmitted }) {
             <input id="jobTitle" name="jobTitle" type="text" value={form.jobTitle} readOnly className="input-readonly" />
           </div>
         </div>
-        <div className="form-group">
-          <label htmlFor="startDate">Start date</label>
-          <input id="startDate" name="startDate" type="date" value={form.startDate} readOnly className="input-readonly" />
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="employeeCode">Employee ID</label>
+            <input
+              id="employeeCode"
+              type="text"
+              value={form.employeeCode || '—'}
+              readOnly
+              className="input-readonly"
+            />
+            <span className="field-hint">Assigned by HR</span>
+          </div>
+          <div className="form-group">
+            <label htmlFor="startDate">Start date</label>
+            <input id="startDate" name="startDate" type="date" value={form.startDate} readOnly className="input-readonly" />
+          </div>
         </div>
       </section>
 
       <section className="form-section">
-        <h2>Payroll &amp; Bank Details</h2>
-        <p className="section-desc">Required for salary processing and payslip generation.</p>
+        <h2>Payroll &amp; Bank Details <span className="section-optional">(optional)</span></h2>
+        <p className="section-desc">You can add these now or later. HR may collect them before payroll is processed.</p>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="employeeCode">Employee ID *</label>
-            <input
-              id="employeeCode"
-              name="employeeCode"
-              type="text"
-              value={form.employeeCode}
-              onChange={handleChange}
-              placeholder="GXL0003"
-              readOnly={!!(employee.salary?.employeeCode || employee.employeeCode)}
-              className={`${errors.employeeCode ? 'input-error' : ''} ${(employee.salary?.employeeCode || employee.employeeCode) ? 'input-readonly' : ''}`}
-            />
-            {(employee.salary?.employeeCode || employee.employeeCode) && (
-              <span className="field-hint">Assigned by HR</span>
-            )}
-            {errors.employeeCode && <span className="field-error">{errors.employeeCode}</span>}
-          </div>
-          <div className="form-group">
-            <label htmlFor="uan">UAN *</label>
+            <label htmlFor="uan">UAN</label>
             <input
               id="uan"
               name="uan"
@@ -324,7 +322,7 @@ export default function OnboardingForm({ employee, onSubmitted }) {
         </div>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="bankName">Bank name *</label>
+            <label htmlFor="bankName">Bank name</label>
             <input
               id="bankName"
               name="bankName"
@@ -337,7 +335,7 @@ export default function OnboardingForm({ employee, onSubmitted }) {
             {errors.bankName && <span className="field-error">{errors.bankName}</span>}
           </div>
           <div className="form-group">
-            <label htmlFor="bankAccount">Account number *</label>
+            <label htmlFor="bankAccount">Account number</label>
             <input
               id="bankAccount"
               name="bankAccount"
@@ -418,21 +416,27 @@ export default function OnboardingForm({ employee, onSubmitted }) {
       </section>
 
       <section className="form-section">
-        <h2>Previous Company Documents</h2>
-        <p className="section-desc">For each previous employer, upload offer letter, relieving letter, pay slips, and Form 16.</p>
-        {previousCompanies.map((company, index) => (
-          <PreviousCompanyBlock
-            key={company.id}
-            index={index}
-            company={company}
-            errors={companyErrors[index] || {}}
-            onChange={handlePreviousCompanyChange}
-            onRemove={removePreviousCompany}
-            canRemove={previousCompanies.length > 1}
-          />
-        ))}
+        <h2>Previous Company Documents <span className="section-optional">(optional)</span></h2>
+        <p className="section-desc">
+          Optional — for freshers and interns, you can skip this. Experienced hires can add previous employer details below.
+        </p>
+        {previousCompanies.length === 0 ? (
+          <p className="field-hint">No previous company added.</p>
+        ) : (
+          previousCompanies.map((company, index) => (
+            <PreviousCompanyBlock
+              key={company.id}
+              index={index}
+              company={company}
+              errors={companyErrors[index] || {}}
+              onChange={handlePreviousCompanyChange}
+              onRemove={removePreviousCompany}
+              canRemove
+            />
+          ))
+        )}
         <button type="button" className="btn btn-secondary add-company-btn" onClick={addPreviousCompany}>
-          + Add another company
+          {previousCompanies.length === 0 ? '+ Add previous company' : '+ Add another company'}
         </button>
       </section>
 

@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ensureEmployeeLinked, STATUS } from '../../services/employeeService';
 import OnboardingForm from '../../components/OnboardingForm';
 import PageHeader from '../../components/PageHeader';
+import { APP_NAME } from '../../constants/brand';
 import { toUserMessage, USER_MESSAGES } from '../../utils/userMessages';
 
 export default function EmployeeOnboardingPage() {
@@ -54,7 +55,7 @@ export default function EmployeeOnboardingPage() {
         <div className="card success-card">
           <div className="success-icon">✓</div>
           <h2>Onboarding complete</h2>
-          <p>HR has approved your onboarding. Welcome to PeopleHub! View payslips from the sidebar.</p>
+          <p>HR has approved your onboarding. Welcome to {APP_NAME}! View payslips from the sidebar.</p>
         </div>
       )}
 

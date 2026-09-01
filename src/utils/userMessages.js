@@ -1,5 +1,7 @@
 /** Plain-language messages shown in the app — no technical stack details. */
 
+import { APP_NAME } from '../constants/brand';
+
 export const USER_MESSAGES = {
   generic: 'Something went wrong. Please try again or contact HR for help.',
   network: 'Unable to connect. Please check your internet connection and try again.',
@@ -31,7 +33,7 @@ export const USER_MESSAGES = {
   deleteFailed: 'Could not delete this employee. Please try again.',
   payslipFailed: 'Could not generate the payslip. Please try again.',
   holidaySaveFailed: 'Could not save the company holiday. Please try again or contact your administrator.',
-  appNotConfigured: 'PeopleHub is not fully set up yet. Please contact your administrator.',
+  appNotConfigured: `${APP_NAME} is not fully set up yet. Please contact your administrator.`,
 };
 
 const TECHNICAL_PATTERN = /firebase|firestore|vercel|vite_|auth\/|permission-denied|console|\.env|project:|insufficient permissions|firestore\.rules|googleapis|cloud\.google|grpc|webchannel|failed-precondition|unauthenticated|unavailable|internal error|index required|missing index|requires an index|xmlhttprequest|network request|cors|employee-data-|@firebase|firebaseerror|webpack|chunk load|dynamically imported|syntaxerror|typeerror|referenceerror|undefined is not|null is not|cannot read propert|quota exceeded|deadline-exceeded|resource-exhausted|invalid-argument|already-exists|not-found|aborted|cancelled|datastore|collection\(|document\(|getdoc|getdocs|adddoc|updatedoc|deletedoc|signinwith|createuserwith|operation-not-allowed|configuration-not-allowed|api key|appspot|firebaseapp/i;

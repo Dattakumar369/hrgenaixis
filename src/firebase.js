@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { APP_NAME } from './constants/brand';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -21,7 +22,7 @@ const missingKeys = [
 ].filter(([, value]) => !value).map(([key]) => key);
 
 if (missingKeys.length > 0) {
-  throw new Error('PeopleHub could not start. Please contact your administrator.');
+  throw new Error(`${APP_NAME} could not start. Please contact your administrator.`);
 }
 
 const app = initializeApp(firebaseConfig);

@@ -1,17 +1,8 @@
 import { useState } from 'react';
 import { createEmployeeRecord } from '../services/employeeService';
+import { APP_NAME } from '../constants/brand';
+import { DEPARTMENTS } from '../constants/departments';
 import { toUserMessage } from '../utils/userMessages';
-
-const DEPARTMENTS = [
-  'Engineering',
-  'Design',
-  'Marketing',
-  'Sales',
-  'Human Resources',
-  'Finance',
-  'Operations',
-  'Other',
-];
 
 const INITIAL = {
   firstName: '',
@@ -47,6 +38,7 @@ export default function CreateEmployeeForm({ hrEmail, onCreated }) {
     if (!form.department) next.department = 'Required';
     if (!form.jobTitle.trim()) next.jobTitle = 'Required';
     if (!form.startDate) next.startDate = 'Required';
+    if (!form.employeeCode.trim()) next.employeeCode = 'Required';
     return next;
   }
 
@@ -78,7 +70,7 @@ export default function CreateEmployeeForm({ hrEmail, onCreated }) {
     <div className="card create-employee-card">
       <h2>Invite Employee</h2>
       <p className="section-desc">
-        Create login credentials for a new team member in PeopleHub. Share the email and password after inviting.
+        Create login credentials for a new team member in {APP_NAME}. Share the email and password after inviting.
       </p>
 
       {status === 'success' && createdCredentials && (
@@ -147,15 +139,17 @@ export default function CreateEmployeeForm({ hrEmail, onCreated }) {
 
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="employeeCode">Employee ID</label>
+            <label htmlFor="employeeCode">Employee ID *</label>
             <input
               id="employeeCode"
               name="employeeCode"
               value={form.employeeCode}
               onChange={handleChange}
               placeholder="GXL0003"
+              className={errors.employeeCode ? 'input-error' : ''}
             />
-            <span className="field-hint">Optional — assign now or employee enters during onboarding</span>
+            <span className="field-hint">Assigned by HR — shown read-only to the employee during onboarding</span>
+            {errors.employeeCode && <span className="field-error">{errors.employeeCode}</span>}
           </div>
           <div className="form-group">
             <label htmlFor="startDate">Start date *</label>
