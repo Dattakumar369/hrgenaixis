@@ -17,6 +17,7 @@ import {
   toUserMessage,
   isTechnicalMessage,
 } from '../utils/userMessages';
+import { normalizeWorkEmail } from '../utils/workEmail';
 
 async function signInOrCreateHR(email, password) {
   try {
@@ -42,7 +43,12 @@ async function signInOrCreateHR(email, password) {
 }
 
 export async function login(email, password) {
-  const normalizedEmail = email.trim().toLowerCase();
+  const { email: normalizedEmail, error } = normalizeWorkEmail(email);
+
+  if (!normalizedEmail) {
+    if (error === 'wrongDomain') throw new Error(USER_MESSAGES.workEmailOnly);
+    throw new Error(USER_MESSAGES.invalidEmail);
+  }
 
   if (!HR_EMAIL) {
     throw new Error(USER_MESSAGES.hrEmailRequired);

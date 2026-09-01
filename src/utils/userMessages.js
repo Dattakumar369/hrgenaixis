@@ -14,6 +14,7 @@ export const USER_MESSAGES = {
   weakPassword: 'Password is too weak. Use at least 6 characters.',
   tooManyAttempts: 'Too many sign-in attempts. Please wait a few minutes and try again.',
   invalidEmail: 'Please enter a valid email address.',
+  workEmailOnly: 'Only @genaixis.com work emails can sign in. Use your company email.',
   hrEmailRequired: 'HR sign-in is not set up yet. Please contact your administrator.',
   wrongHrAccount: (expected) => `Please sign in with the HR account (${expected}).`,
   hrWrongPassword: 'Incorrect password for the HR account. Contact your administrator if you need a reset.',

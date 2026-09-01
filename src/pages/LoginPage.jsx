@@ -3,19 +3,32 @@ import { useNavigate } from 'react-router-dom';
 import { login } from '../services/authService';
 import { isHrUser } from '../firebase';
 import BrandLogo from '../components/BrandLogo';
-import { APP_NAME, APP_TAGLINE, COMPANY_NAME, PLATFORM_MODULES } from '../constants/brand';
+import { APP_NAME, APP_TAGLINE, COMPANY_NAME, PLATFORM_MODULES, WORK_EMAIL_DOMAIN } from '../constants/brand';
+import { extractEmailLocalPart, normalizeWorkEmail } from '../utils/workEmail';
 import { toUserMessage, USER_MESSAGES } from '../utils/userMessages';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [emailLocal, setEmailLocal] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  function handleEmailChange(e) {
+    setEmailLocal(extractEmailLocalPart(e.target.value));
+    setError('');
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+
+    const { email, error: emailError } = normalizeWorkEmail(emailLocal);
+    if (!email) {
+      setError(emailError === 'wrongDomain' ? USER_MESSAGES.workEmailOnly : USER_MESSAGES.invalidEmail);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -58,7 +71,7 @@ export default function LoginPage() {
             <div className="login-header">
               <span className="login-eyebrow">Secure sign in</span>
               <h1>Welcome back</h1>
-              <p>Continue to {APP_NAME} with your work email and password.</p>
+              <p>Sign in with your @{WORK_EMAIL_DOMAIN} work email and password.</p>
             </div>
 
             {error && <div className="alert alert-error login-alert" role="alert">{error}</div>}
@@ -66,16 +79,21 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="login-form">
               <div className="form-group login-field">
                 <label htmlFor="email">Work email</label>
-                <input
-                  id="email"
-                  type="email"
-                  className="login-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@genaixis.com"
-                  required
-                  autoComplete="email"
-                />
+                <div className="login-email-group">
+                  <input
+                    id="email"
+                    type="text"
+                    inputMode="email"
+                    className="login-input login-input--email-local"
+                    value={emailLocal}
+                    onChange={handleEmailChange}
+                    placeholder="your.name"
+                    required
+                    autoComplete="username"
+                    spellCheck={false}
+                  />
+                  <span className="login-email-domain">@{WORK_EMAIL_DOMAIN}</span>
+                </div>
               </div>
 
               <div className="form-group login-field">

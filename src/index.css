@@ -518,6 +518,53 @@ main:not(.dashboard-layout) {
   box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.12) !important;
 }
 
+.login-email-group {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f1f5f9;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.login-email-group:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.12);
+  background: #fff;
+}
+
+.login-input--email-local {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.login-input--email-local:focus {
+  box-shadow: none !important;
+}
+
+.login-email-domain {
+  display: flex;
+  align-items: center;
+  padding: 0 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: #e2e8f0;
+  border-left: 1px solid #cbd5e1;
+  white-space: nowrap;
+}
+
+.login-email-group:focus-within .login-email-domain {
+  background: #ecfdf5;
+  color: #0f766e;
+  border-left-color: #99f6e4;
+}
+
 .login-submit {
   margin-top: 0.35rem;
   width: 100%;
