@@ -34,16 +34,37 @@ export const USER_MESSAGES = {
   appNotConfigured: 'PeopleHub is not fully set up yet. Please contact your administrator.',
 };
 
-const TECHNICAL_PATTERN = /firebase|firestore|vercel|vite_|auth\/|permission-denied|console|\.env|project:|insufficient permissions|firestore\.rules/i;
+const TECHNICAL_PATTERN = /firebase|firestore|vercel|vite_|auth\/|permission-denied|console|\.env|project:|insufficient permissions|firestore\.rules|googleapis|cloud\.google|grpc|webchannel|failed-precondition|unauthenticated|unavailable|internal error|index required|missing index|requires an index|xmlhttprequest|network request|cors|employee-data-|@firebase|firebaseerror|webpack|chunk load|dynamically imported|syntaxerror|typeerror|referenceerror|undefined is not|null is not|cannot read propert|quota exceeded|deadline-exceeded|resource-exhausted|invalid-argument|already-exists|not-found|aborted|cancelled|datastore|collection\(|document\(|getdoc|getdocs|adddoc|updatedoc|deletedoc|signinwith|createuserwith|operation-not-allowed|configuration-not-allowed|api key|appspot|firebaseapp/i;
+
+const TECHNICAL_CODE_PATTERN = /^(auth|firestore|storage|functions|messaging|database)\//;
 
 export function isTechnicalMessage(message) {
   return TECHNICAL_PATTERN.test(String(message || ''));
 }
 
+/** True only for short, plain-language messages safe to show end users. */
+export function isUserFacingMessage(message) {
+  const text = String(message || '').trim();
+  if (!text || text.length > 160) return false;
+  if (isTechnicalMessage(text)) return false;
+  if (/https?:\/\/|\/\/|\{|\[|\]|\\n|\bat\s|\w+\.(js|ts|jsx|tsx):|:\d+:\d+/i.test(text)) return false;
+  if (/^[A-Z][A-Z0-9_/-]+:\s/.test(text)) return false;
+  return true;
+}
+
+function extractErrorMessage(error) {
+  if (!error) return '';
+  if (typeof error === 'string') return error.trim();
+  return String(error.message || '').trim();
+}
+
 export function toUserMessage(error, fallback = USER_MESSAGES.generic) {
-  const message = error?.message?.trim();
-  if (!message || isTechnicalMessage(message)) return fallback;
-  if (message.length > 160) return fallback;
+  if (error?.code && TECHNICAL_CODE_PATTERN.test(String(error.code))) {
+    return fallback;
+  }
+
+  const message = extractErrorMessage(error);
+  if (!message || !isUserFacingMessage(message)) return fallback;
   return message;
 }
 
@@ -80,7 +101,16 @@ export function mapStorageError(error, fallback = USER_MESSAGES.saveFailed) {
   if (code === 'permission-denied' || message.includes('permission-denied')) {
     return USER_MESSAGES.permission;
   }
-  if (message.includes('not-found') || message.includes('Unavailable')) {
+  if (code === 'unauthenticated') {
+    return USER_MESSAGES.permission;
+  }
+  if (code === 'unavailable' || message.includes('Unavailable')) {
+    return USER_MESSAGES.serviceUnavailable;
+  }
+  if (code === 'not-found' || message.includes('not-found')) {
+    return USER_MESSAGES.serviceUnavailable;
+  }
+  if (code === 'failed-precondition' || message.includes('index')) {
     return USER_MESSAGES.serviceUnavailable;
   }
 
@@ -99,4 +129,9 @@ export function mapUploadError(error) {
   }
 
   return toUserMessage(error, USER_MESSAGES.uploadFailed);
+}
+
+/** Always returns a safe message for UI — never raw Firebase/Vercel errors. */
+export function sanitizeForUi(error, fallback = USER_MESSAGES.generic) {
+  return toUserMessage(error, fallback);
 }

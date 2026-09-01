@@ -8,7 +8,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { mapStorageError, USER_MESSAGES } from '../utils/userMessages';
+import { mapStorageError, toUserMessage, USER_MESSAGES } from '../utils/userMessages';
 import { getIndiaPublicHolidays } from '../data/indiaPublicHolidays';
 
 export const HOLIDAY_TYPES = {
@@ -163,7 +163,7 @@ export async function createHoliday({ name, date, type, description }, hrEmail) 
     if (error.message?.includes('already exists') || error.message?.includes('Please')) {
       throw error;
     }
-    throw new Error(mapHolidayError(error, USER_MESSAGES.holidaySaveFailed));
+    throw new Error(toUserMessage(error, mapHolidayError(error, USER_MESSAGES.holidaySaveFailed)));
   }
 }
 
@@ -192,7 +192,7 @@ export async function updateHoliday(holidayId, { name, date, type, description }
     if (error.message?.includes('already exists') || error.message?.includes('Please')) {
       throw error;
     }
-    throw new Error(mapHolidayError(error, USER_MESSAGES.holidaySaveFailed));
+    throw new Error(toUserMessage(error, mapHolidayError(error, USER_MESSAGES.holidaySaveFailed)));
   }
 }
 

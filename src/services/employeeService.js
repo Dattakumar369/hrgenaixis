@@ -33,7 +33,7 @@ export const EMPLOYMENT_STATUS_LABELS = {
   [EMPLOYMENT_STATUS.ABSCONDED]: 'Absconded',
 };
 
-import { mapStorageError, USER_MESSAGES, mapAuthError } from '../utils/userMessages';
+import { mapStorageError, USER_MESSAGES, mapAuthError, toUserMessage } from '../utils/userMessages';
 
 function mapEmployeeError(error, fallback = USER_MESSAGES.saveFailed) {
   return mapStorageError(error, fallback);
@@ -131,8 +131,7 @@ export async function createEmployeeRecord(data, hrEmail) {
 
     return docRef.id;
   } catch (error) {
-    if (error.message?.includes('already invited')) throw error;
-    throw new Error(mapEmployeeError(error));
+    throw new Error(toUserMessage(error, mapEmployeeError(error)));
   }
 }
 
@@ -240,8 +239,7 @@ export async function submitOnboarding(employeeId, uid, formData, documents) {
       submittedAt: serverTimestamp(),
     });
   } catch (error) {
-    if (error.message && !error.code) throw error;
-    throw new Error(mapEmployeeError(error));
+    throw new Error(toUserMessage(error, mapEmployeeError(error)));
   }
 }
 
@@ -265,22 +263,30 @@ async function uploadPreviousCompany(employeeId, uid, company, index) {
 }
 
 export async function approveEmployee(employeeId, hrEmail) {
-  await updateDoc(doc(db, 'employees', employeeId), {
-    status: STATUS.APPROVED,
-    employmentStatus: EMPLOYMENT_STATUS.ACTIVE,
-    approvedAt: serverTimestamp(),
-    approvedBy: hrEmail,
-    rejectionReason: null,
-  });
+  try {
+    await updateDoc(doc(db, 'employees', employeeId), {
+      status: STATUS.APPROVED,
+      employmentStatus: EMPLOYMENT_STATUS.ACTIVE,
+      approvedAt: serverTimestamp(),
+      approvedBy: hrEmail,
+      rejectionReason: null,
+    });
+  } catch (error) {
+    throw new Error(mapEmployeeError(error));
+  }
 }
 
 export async function rejectEmployee(employeeId, hrEmail, reason) {
-  await updateDoc(doc(db, 'employees', employeeId), {
-    status: STATUS.REJECTED,
-    rejectedAt: serverTimestamp(),
-    rejectedBy: hrEmail,
-    rejectionReason: reason.trim(),
-  });
+  try {
+    await updateDoc(doc(db, 'employees', employeeId), {
+      status: STATUS.REJECTED,
+      rejectedAt: serverTimestamp(),
+      rejectedBy: hrEmail,
+      rejectionReason: reason.trim(),
+    });
+  } catch (error) {
+    throw new Error(mapEmployeeError(error));
+  }
 }
 
 /** Set lifecycle status (active / resigned / absconded) for an onboarded employee. */

@@ -214,7 +214,6 @@ export default function OnboardingForm({ employee, onSubmitted }) {
       });
       onSubmitted?.();
     } catch (err) {
-      console.error(err);
       setStatus('error');
       setErrorMessage(toUserMessage(err, USER_MESSAGES.saveFailed));
     }

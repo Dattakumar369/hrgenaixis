@@ -12,6 +12,7 @@ import { exportEmployeesToExcel } from '../services/exportService';
 import CreateEmployeeForm from '../components/CreateEmployeeForm';
 import EmployeeReviewPanel from '../components/EmployeeReviewPanel';
 import AppHeader from '../components/AppHeader';
+import { toUserMessage, USER_MESSAGES } from '../utils/userMessages';
 
 function employmentStatusOf(emp) {
   if (emp.employmentStatus) return emp.employmentStatus;
@@ -41,7 +42,7 @@ export default function HRDashboard() {
       const data = await getAllEmployees();
       setEmployees(data);
     } catch (err) {
-      setListError(err?.message || 'Failed to load employees.');
+      setListError(toUserMessage(err, USER_MESSAGES.loadEmployeesFailed));
     } finally {
       setLoading(false);
     }
